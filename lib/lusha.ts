@@ -31,6 +31,8 @@ export type LushaSearchParams = {
   countries?: string[];
   companyNames?: string[];
   companyDomains?: string[];
+  names?: string[];
+  searchText?: string;
   page?: number;
   size?: number;
 };
@@ -117,6 +119,7 @@ export async function lushaContactSearch(
   if (params.jobTitles?.length) contactsInclude.jobTitles = params.jobTitles;
   if (params.departments?.length) contactsInclude.departments = params.departments;
   if (params.seniority?.length) contactsInclude.seniority = params.seniority;
+  if (params.names?.length) contactsInclude.names = params.names;
   if (params.countries?.length)
     contactsInclude.locations = params.countries.map((c) => ({ country: c }));
 
@@ -129,10 +132,13 @@ export async function lushaContactSearch(
     (filters as { companies?: Json }).companies = { include: companiesInclude };
   }
 
-  const json = await post("/prospecting/contact/search", {
+  const reqBody: Json = {
     filters,
     pages: { page: params.page ?? 0, size: Math.min(params.size ?? 40, 50) },
-  });
+  };
+  if (params.searchText) reqBody.searchText = params.searchText;
+
+  const json = await post("/prospecting/contact/search", reqBody);
 
   const rows = arr(json.data).length ? arr(json.data) : arr(json.contacts);
   const contacts = rows.map(normalizePreview);

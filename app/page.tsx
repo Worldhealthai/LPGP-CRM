@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight, Building2, Users, Upload } from "lucide-react";
 import { getCategoryCounts, getContactCount } from "@/lib/queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
+import { isAdminConfigured } from "@/lib/supabase/admin";
+import { lushaConfigured } from "@/lib/lusha";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { StatCard } from "@/components/stat-card";
 import { SetupNotice } from "@/components/setup-notice";
@@ -34,7 +36,7 @@ export default async function DashboardPage() {
 
       {!configured ? <SetupNotice /> : null}
 
-      <DashboardSearch />
+      <DashboardSearch lushaReady={lushaConfigured()} adminReady={isAdminConfigured()} />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="All firms" value={counts.total} sublabel="companies tracked" href="/companies" />

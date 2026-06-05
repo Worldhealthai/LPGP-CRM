@@ -11,8 +11,13 @@ each firm holds a roster of senior contacts. Leads are pulled in from **Lusha**.
   people that work there.
 - **Contact profiles** — first/last name, company, job title, LinkedIn, email,
   phone, country. Inline-editable; add free-text notes to any record.
+- **Search** — the dashboard searches your whole database live (firms + people),
+  and can also look people up in **Lusha** on demand; every result is labelled
+  with its source, and Lusha hits can be imported in one click.
 - **Lusha import** — search Lusha by job title / country / firm from inside the
   app, preview the matches, and import the ones you want straight into Supabase.
+- **CSV export** — download contacts or companies (optionally filtered by book
+  or portfolio) from the Contacts, Companies and Portfolio pages.
 - Built to scale into a deal-data intelligence platform later.
 
 ## Quick start
