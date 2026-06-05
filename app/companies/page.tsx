@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { Category } from "@/lib/types";
 
 export const metadata = { title: "Companies — LPGP Connect" };
+export const dynamic = "force-dynamic";
 
 export default async function CompaniesPage({
   searchParams,

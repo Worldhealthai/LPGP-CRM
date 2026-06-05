@@ -6,6 +6,7 @@ import { SetupNotice } from "@/components/setup-notice";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Contacts — LPGP Connect" };
+export const dynamic = "force-dynamic";
 
 export default async function ContactsPage() {
   const contacts = await listContacts();

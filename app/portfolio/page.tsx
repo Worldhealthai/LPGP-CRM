@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Portfolio — LPGP Connect" };
+export const dynamic = "force-dynamic";
 
 export default async function PortfolioPage() {
   const companies = await listPortfolioCompanies();

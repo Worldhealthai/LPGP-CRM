@@ -10,6 +10,8 @@ import { SetupNotice } from "@/components/setup-notice";
 import { DashboardSearch } from "@/components/dashboard-search";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const configured = isSupabaseConfigured();
   const [counts, contactCount] = await Promise.all([getCategoryCounts(), getContactCount()]);
