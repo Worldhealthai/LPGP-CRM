@@ -3,17 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  Upload,
-  Star,
-  Settings,
-  Menu,
-  X,
-} from "lucide-react";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { LayoutDashboard, Building2, Users, Upload, Star, Settings, Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -68,29 +58,6 @@ function NavBody({ onNavigate }: { onNavigate?: () => void }) {
             >
               <Icon className="h-4 w-4 shrink-0" />
               {item.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="space-y-0.5">
-        <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Books
-        </p>
-        {CATEGORY_ORDER.map((k) => {
-          const meta = CATEGORIES[k];
-          return (
-            <Link
-              key={k}
-              href={`/companies?category=${k}`}
-              onClick={onNavigate}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-foreground/70 hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <span className={cn("h-2 w-2 rounded-full shrink-0", meta.dot)} />
-              <span className="flex-1">
-                {meta.singular}
-                <span className="ml-1.5 text-xs font-normal text-muted-foreground">{meta.name}</span>
-              </span>
             </Link>
           );
         })}
