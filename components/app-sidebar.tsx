@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, Building2, Users, Upload, Star, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, Building2, Layers, Users, Upload, Star, Settings, Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const MENU = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/companies", label: "Companies", icon: Building2 },
+  { href: "/funds", label: "Funds", icon: Layers },
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/portfolio", label: "Portfolio", icon: Star },
   { href: "/import", label: "Import", icon: Upload },

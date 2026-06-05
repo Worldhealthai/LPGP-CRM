@@ -1,5 +1,18 @@
 import { getReadClient } from "./supabase/server";
-import type { Category, Company, Contact, ContactWithCompany, Fund, Note } from "./types";
+import type {
+  Category,
+  Company,
+  Contact,
+  ContactWithCompany,
+  ClientLink,
+  Fund,
+  FundCommitment,
+  FundManager,
+  FundWithManager,
+  LpCommitment,
+  Note,
+  ProviderLink,
+} from "./types";
 
 export type CategoryCounts = Record<Category, number> & { total: number };
 
@@ -119,6 +132,146 @@ export async function getContactsForCompany(companyId: string): Promise<Contact[
     .eq("company_id", companyId)
     .order("full_name");
   return (data as Contact[]) ?? [];
+}
+
+async function managerMap(
+  supabase: NonNullable<ReturnType<typeof getReadClient>>,
+  ids: string[],
+): Promise<Map<string, FundManager>> {
+  const map = new Map<string, FundManager>();
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (!unique.length) return map;
+  const { data } = await supabase
+    .from("companies")
+    .select("id, name, category, domain")
+    .in("id", unique);
+  for (const c of data ?? []) map.set(c.id, c as FundManager);
+  return map;
+}
+
+export async function listFunds(): Promise<FundWithManager[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("funds")
+    .select("*")
+    .order("fund_size_usd", { ascending: false, nullsFirst: false });
+  if (error || !data) return [];
+  const funds = data as Fund[];
+  const managers = await managerMap(
+    supabase,
+    funds.map((f) => f.company_id).filter(Boolean) as string[],
+  );
+  return funds.map((f) => ({ ...f, manager: f.company_id ? managers.get(f.company_id) ?? null : null }));
+}
+
+export async function getFund(id: string): Promise<FundWithManager | null> {
+  const supabase = getReadClient();
+  if (!supabase) return null;
+  const { data } = await supabase.from("funds").select("*").eq("id", id).single();
+  if (!data) return null;
+  const fund = data as Fund;
+  let manager: FundManager | null = null;
+  if (fund.company_id) {
+    const { data: c } = await supabase
+      .from("companies")
+      .select("id, name, category, domain")
+      .eq("id", fund.company_id)
+      .single();
+    manager = (c as FundManager) ?? null;
+  }
+  return { ...fund, manager };
+}
+
+export async function getCommitmentsForFund(fundId: string): Promise<FundCommitment[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data } = await supabase.from("commitments").select("*").eq("fund_id", fundId);
+  const rows = (data as { id: string; lp_company_id: string | null; amount_usd: number | null; commitment_date: string | null }[]) ?? [];
+  const lps = await managerMap(supabase, rows.map((r) => r.lp_company_id).filter(Boolean) as string[]);
+  return rows
+    .map((r) => ({
+      id: r.id,
+      amount_usd: r.amount_usd,
+      commitment_date: r.commitment_date,
+      lp: r.lp_company_id ? lps.get(r.lp_company_id) ?? null : null,
+    }))
+    .sort((a, b) => (b.amount_usd ?? 0) - (a.amount_usd ?? 0));
+}
+
+export async function getCommitmentsForLp(lpCompanyId: string): Promise<LpCommitment[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data } = await supabase.from("commitments").select("*").eq("lp_company_id", lpCompanyId);
+  const rows = (data as { id: string; fund_id: string | null; amount_usd: number | null; commitment_date: string | null }[]) ?? [];
+  const fundIds = [...new Set(rows.map((r) => r.fund_id).filter(Boolean))] as string[];
+  const fundMap = new Map<string, FundWithManager>();
+  if (fundIds.length) {
+    const { data: funds } = await supabase.from("funds").select("*").in("id", fundIds);
+    const managers = await managerMap(
+      supabase,
+      (funds ?? []).map((f) => f.company_id).filter(Boolean) as string[],
+    );
+    for (const f of (funds as Fund[]) ?? []) {
+      fundMap.set(f.id, { ...f, manager: f.company_id ? managers.get(f.company_id) ?? null : null });
+    }
+  }
+  return rows
+    .map((r) => ({
+      id: r.id,
+      amount_usd: r.amount_usd,
+      commitment_date: r.commitment_date,
+      fund: r.fund_id ? fundMap.get(r.fund_id) ?? null : null,
+    }))
+    .sort((a, b) => (b.amount_usd ?? 0) - (a.amount_usd ?? 0));
+}
+
+export async function getProvidersForClient(companyId: string): Promise<ProviderLink[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("service_relationships")
+    .select("*")
+    .eq("client_company_id", companyId);
+  const rows = (data as { id: string; provider_company_id: string | null; role: string | null }[]) ?? [];
+  const ids = [...new Set(rows.map((r) => r.provider_company_id).filter(Boolean))] as string[];
+  const map = new Map<string, ProviderLink["provider"]>();
+  if (ids.length) {
+    const { data: cos } = await supabase
+      .from("companies")
+      .select("id, name, category, sub_type, domain")
+      .in("id", ids);
+    for (const c of cos ?? []) map.set(c.id, c as ProviderLink["provider"]);
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    role: r.role,
+    provider: r.provider_company_id ? map.get(r.provider_company_id) ?? null : null,
+  }));
+}
+
+export async function getClientsForProvider(companyId: string): Promise<ClientLink[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from("service_relationships")
+    .select("*")
+    .eq("provider_company_id", companyId);
+  const rows = (data as { id: string; client_company_id: string | null; role: string | null }[]) ?? [];
+  const ids = [...new Set(rows.map((r) => r.client_company_id).filter(Boolean))] as string[];
+  const map = new Map<string, ClientLink["client"]>();
+  if (ids.length) {
+    const { data: cos } = await supabase
+      .from("companies")
+      .select("id, name, category, domain")
+      .in("id", ids);
+    for (const c of cos ?? []) map.set(c.id, c as ClientLink["client"]);
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    role: r.role,
+    client: r.client_company_id ? map.get(r.client_company_id) ?? null : null,
+  }));
 }
 
 export async function getFundsForCompany(companyId: string): Promise<Fund[]> {

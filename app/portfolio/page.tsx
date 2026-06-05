@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { CompaniesBrowser } from "@/components/companies-browser";
 import { SetupNotice } from "@/components/setup-notice";
 import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 
 export const metadata = { title: "Portfolio — LPGP Connect" };
@@ -15,22 +16,20 @@ export default async function PortfolioPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 md:px-6 py-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Portfolio</h1>
-          <p className="text-muted-foreground mt-1">
-            The firms you&apos;re actively tracking — added with{" "}
-            <span className="font-medium text-foreground">Add to Portfolio</span> on any company.
-          </p>
-        </div>
-        {companies.length > 0 ? (
-          <Button asChild variant="outline">
-            <a href="/api/export/companies?portfolio=1" download>
-              <Download className="h-4 w-4" /> Export CSV
-            </a>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        eyebrow="Watchlist"
+        title="Portfolio"
+        description="The firms you're actively tracking — added with Add to Portfolio on any company."
+        actions={
+          companies.length > 0 ? (
+            <Button asChild variant="outline">
+              <a href="/api/export/companies?portfolio=1" download>
+                <Download className="h-4 w-4" /> Export CSV
+              </a>
+            </Button>
+          ) : null
+        }
+      />
 
       {!isSupabaseConfigured() ? <SetupNotice /> : null}
 

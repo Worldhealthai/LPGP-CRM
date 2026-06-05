@@ -70,6 +70,48 @@ export type Fund = {
   created_at: string;
 };
 
+export type FundManager = { id: string; name: string; category: Category; domain: string | null };
+export type FundWithManager = Fund & { manager: FundManager | null };
+
+export type Commitment = {
+  id: string;
+  lp_company_id: string | null;
+  fund_id: string | null;
+  amount_usd: number | null;
+  commitment_date: string | null;
+  created_at: string;
+};
+
+// A commitment as seen from a fund (which LP committed).
+export type FundCommitment = {
+  id: string;
+  amount_usd: number | null;
+  commitment_date: string | null;
+  lp: { id: string; name: string; category: Category } | null;
+};
+
+// A commitment as seen from an LP (which fund they backed).
+export type LpCommitment = {
+  id: string;
+  amount_usd: number | null;
+  commitment_date: string | null;
+  fund: FundWithManager | null;
+};
+
+// A service provider used by a client (GP/LP).
+export type ProviderLink = {
+  id: string;
+  role: string | null;
+  provider: { id: string; name: string; category: Category; sub_type: string | null; domain: string | null } | null;
+};
+
+// A client served by a provider (SP).
+export type ClientLink = {
+  id: string;
+  role: string | null;
+  client: { id: string; name: string; category: Category; domain: string | null } | null;
+};
+
 export type Note = {
   id: string;
   entity_type: "company" | "contact";

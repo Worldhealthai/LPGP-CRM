@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Globe, Link2, MapPin, Users, PieChart, Layers } from "lucide-react";
-import { getCompany, getContactsForCompany, getFundsForCompany, getNotes } from "@/lib/queries";
+import { ArrowLeft, Globe, Link2, MapPin, Users, PieChart, Layers, Briefcase } from "lucide-react";
+import {
+  getCompany,
+  getContactsForCompany,
+  getFundsForCompany,
+  getCommitmentsForLp,
+  getProvidersForClient,
+  getClientsForProvider,
+  getNotes,
+} from "@/lib/queries";
 import { CATEGORIES } from "@/lib/categories";
 import { formatAumLong, formatUsd } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
@@ -30,9 +38,12 @@ export default async function CompanyProfile({ params }: { params: Promise<{ id:
   const company = await getCompany(id);
   if (!company) notFound();
 
-  const [contacts, funds, notes] = await Promise.all([
+  const [contacts, funds, commitments, providers, clients, notes] = await Promise.all([
     getContactsForCompany(id),
     getFundsForCompany(id),
+    company.category === "LP" ? getCommitmentsForLp(id) : Promise.resolve([]),
+    company.category === "SP" ? Promise.resolve([]) : getProvidersForClient(id),
+    company.category === "SP" ? getClientsForProvider(id) : Promise.resolve([]),
     getNotes("company", id),
   ]);
   const meta = CATEGORIES[company.category];
@@ -187,6 +198,134 @@ export default async function CompanyProfile({ params }: { params: Promise<{ id:
                       ) : (
                         "—"
                       )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Fund commitments (LPs) */}
+      {commitments.length > 0 ? (
+        <section className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b">
+            <Layers className="h-4 w-4 text-muted-foreground" />
+            <h2 className="font-semibold">Fund commitments</h2>
+            <span className="text-sm text-muted-foreground">({commitments.length})</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-5 py-2">Fund</th>
+                  <th className="text-left font-medium px-3 py-2">Manager</th>
+                  <th className="text-left font-medium px-3 py-2">Date</th>
+                  <th className="text-right font-medium px-5 py-2">Commitment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {commitments.map((c) => (
+                  <tr key={c.id} className="border-t hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-2.5 font-medium">
+                      {c.fund ? (
+                        <Link href={`/funds/${c.fund.id}`} className="hover:text-primary">{c.fund.name}</Link>
+                      ) : "—"}
+                    </td>
+                    <td className="px-3 py-2.5 text-muted-foreground">
+                      {c.fund?.manager ? (
+                        <Link href={`/companies/${c.fund.manager.id}`} className="hover:text-primary">
+                          {c.fund.manager.name}
+                        </Link>
+                      ) : "—"}
+                    </td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{c.commitment_date ?? "—"}</td>
+                    <td className="px-5 py-2.5 text-right tabular font-medium">
+                      {c.amount_usd != null ? formatUsd(c.amount_usd) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Service providers (GP / LP) */}
+      {providers.length > 0 ? (
+        <section className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b">
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <h2 className="font-semibold">Service providers</h2>
+            <span className="text-sm text-muted-foreground">({providers.length})</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-5 py-2">Provider</th>
+                  <th className="text-left font-medium px-3 py-2">Type</th>
+                  <th className="text-left font-medium px-5 py-2">Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {providers.map((p) => (
+                  <tr key={p.id} className="border-t hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-2.5">
+                      {p.provider ? (
+                        <Link href={`/companies/${p.provider.id}`} className="inline-flex items-center gap-2 font-medium hover:text-primary">
+                          <CompanyLogo name={p.provider.name} domain={p.provider.domain} size={24} />
+                          {p.provider.name}
+                        </Link>
+                      ) : "—"}
+                    </td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{p.provider?.sub_type ?? "—"}</td>
+                    <td className="px-5 py-2.5">
+                      <span className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs">
+                        {p.role ?? "Provider"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Clients (SP) */}
+      {clients.length > 0 ? (
+        <section className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b">
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+            <h2 className="font-semibold">Clients</h2>
+            <span className="text-sm text-muted-foreground">({clients.length})</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-5 py-2">Client</th>
+                  <th className="text-left font-medium px-5 py-2">Engaged as</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((cl) => (
+                  <tr key={cl.id} className="border-t hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-2.5">
+                      {cl.client ? (
+                        <Link href={`/companies/${cl.client.id}`} className="inline-flex items-center gap-2 font-medium hover:text-primary">
+                          <CompanyLogo name={cl.client.name} domain={cl.client.domain} size={24} />
+                          <CategoryBadge category={cl.client.category} />
+                          {cl.client.name}
+                        </Link>
+                      ) : "—"}
+                    </td>
+                    <td className="px-5 py-2.5">
+                      <span className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs">
+                        {cl.role ?? "Provider"}
+                      </span>
                     </td>
                   </tr>
                 ))}
