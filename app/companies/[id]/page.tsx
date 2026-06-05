@@ -12,6 +12,7 @@ import { NotesPanel } from "@/components/notes-panel";
 import { PortfolioButton } from "@/components/portfolio-button";
 import { ReportButton } from "@/components/report-button";
 import { AllocationEditor } from "@/components/allocation-editor";
+import { DeleteButton } from "@/components/delete-button";
 import { Donut, allocationShade } from "@/components/charts/donut";
 import { AllocationBars } from "@/components/charts/allocation-bars";
 import { Separator } from "@/components/ui/separator";
@@ -213,6 +214,14 @@ export default async function CompanyProfile({ params }: { params: Promise<{ id:
               <EditableField entity="company" id={company.id} field="employee_range" value={company.employee_range} label="Employees" placeholder="e.g. 1,001–5,000" />
               <EditableField entity="company" id={company.id} field="description" value={company.description} label="Description" multiline placeholder="What does this firm do?" />
             </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-destructive">Danger zone</h3>
+            <p className="text-xs text-muted-foreground mt-0.5 mb-3">
+              Removes this company and all of its contacts.
+            </p>
+            <DeleteButton kind="company" id={company.id} />
           </div>
         </aside>
 

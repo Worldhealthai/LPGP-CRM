@@ -5,6 +5,51 @@ import { getAdminClient } from "./supabase/admin";
 
 export type ActionResult = { ok: boolean; error?: string };
 
+// --- Deletes ---------------------------------------------------------------
+
+async function deleteCompanyIds(ids: string[]): Promise<ActionResult> {
+  const supabase = getAdminClient();
+  if (!supabase) return { ok: false, error: "Supabase service role not configured" };
+  if (ids.length === 0) return { ok: true };
+
+  // Remove notes attached to this company's contacts, then the contacts,
+  // then notes on the companies, then the companies themselves.
+  const { data: kids } = await supabase.from("contacts").select("id").in("company_id", ids);
+  const contactIds = (kids ?? []).map((c) => c.id as string);
+  if (contactIds.length) {
+    await supabase.from("notes").delete().eq("entity_type", "contact").in("entity_id", contactIds);
+  }
+  await supabase.from("notes").delete().eq("entity_type", "company").in("entity_id", ids);
+  await supabase.from("contacts").delete().in("company_id", ids);
+  const { error } = await supabase.from("companies").delete().in("id", ids);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/companies");
+  revalidatePath("/contacts");
+  revalidatePath("/portfolio");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteCompany(id: string): Promise<ActionResult> {
+  return deleteCompanyIds([id]);
+}
+
+export async function deleteCompanies(ids: string[]): Promise<ActionResult> {
+  return deleteCompanyIds(Array.isArray(ids) ? ids.filter(Boolean) : []);
+}
+
+export async function deleteContact(id: string): Promise<ActionResult> {
+  const supabase = getAdminClient();
+  if (!supabase) return { ok: false, error: "Supabase service role not configured" };
+  await supabase.from("notes").delete().eq("entity_type", "contact").eq("entity_id", id);
+  const { error } = await supabase.from("contacts").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/contacts");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 const CONTACT_FIELDS = new Set([
   "first_name",
   "last_name",

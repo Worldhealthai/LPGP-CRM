@@ -7,6 +7,7 @@ import { PersonAvatar } from "@/components/person-avatar";
 import { EditableField } from "@/components/editable-field";
 import { NotesPanel } from "@/components/notes-panel";
 import { ContactRating } from "@/components/contact-rating";
+import { DeleteButton } from "@/components/delete-button";
 import { Gauge } from "@/components/charts/gauge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -199,6 +200,12 @@ export default async function ContactProfile({ params }: { params: Promise<{ id:
               <EditableField entity="contact" id={contact.id} field="priority" value={contact.priority} label="Priority" placeholder="High / Medium / Low" />
               <EditableField entity="contact" id={contact.id} field="last_contacted" value={contact.last_contacted} label="Last contacted" placeholder="YYYY-MM-DD" />
             </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold text-destructive">Danger zone</h3>
+            <p className="text-xs text-muted-foreground mt-0.5 mb-3">Removes this contact.</p>
+            <DeleteButton kind="contact" id={contact.id} />
           </div>
         </aside>
 
