@@ -65,26 +65,49 @@ export async function listContacts(opts: {
 } = {}): Promise<ContactWithCompany[]> {
   const supabase = getReadClient();
   if (!supabase) return [];
-  let query = supabase
-    .from("contacts")
-    .select("*, company:companies(id, name, category, logo_url)")
-    .order("full_name");
+  // Fetch contacts plainly (no embed) so a join quirk can never drop rows,
+  // then attach company data in JS.
+  let query = supabase.from("contacts").select("*").order("full_name");
   if (opts.companyId) query = query.eq("company_id", opts.companyId);
   if (opts.search) query = query.ilike("full_name", `%${opts.search}%`);
   const { data, error } = await query;
   if (error || !data) return [];
-  return data as unknown as ContactWithCompany[];
+
+  const contacts = data as Contact[];
+  const companyIds = [...new Set(contacts.map((c) => c.company_id).filter(Boolean))] as string[];
+  const companyMap = new Map<string, ContactWithCompany["company"]>();
+  if (companyIds.length) {
+    const { data: companies } = await supabase
+      .from("companies")
+      .select("id, name, category, logo_url")
+      .in("id", companyIds);
+    for (const co of companies ?? []) {
+      companyMap.set(co.id, co as ContactWithCompany["company"]);
+    }
+  }
+
+  return contacts.map((c) => ({
+    ...c,
+    company: c.company_id ? companyMap.get(c.company_id) ?? null : null,
+  }));
 }
 
 export async function getContact(id: string): Promise<ContactWithCompany | null> {
   const supabase = getReadClient();
   if (!supabase) return null;
-  const { data } = await supabase
-    .from("contacts")
-    .select("*, company:companies(id, name, category, logo_url)")
-    .eq("id", id)
-    .single();
-  return (data as unknown as ContactWithCompany) ?? null;
+  const { data } = await supabase.from("contacts").select("*").eq("id", id).single();
+  if (!data) return null;
+  const contact = data as Contact;
+  let company: ContactWithCompany["company"] = null;
+  if (contact.company_id) {
+    const { data: co } = await supabase
+      .from("companies")
+      .select("id, name, category, logo_url")
+      .eq("id", contact.company_id)
+      .single();
+    company = (co as ContactWithCompany["company"]) ?? null;
+  }
+  return { ...contact, company };
 }
 
 export async function getContactsForCompany(companyId: string): Promise<Contact[]> {
