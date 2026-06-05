@@ -370,7 +370,7 @@ export function ExcelUpload({ adminReady }: { adminReady: boolean }) {
             </div>
           </div>
           {!adminReady ? (
-            <p className="text-xs text-amber-700">
+            <p className="text-xs text-muted-foreground">
               Set <code className="font-mono">SUPABASE_SERVICE_ROLE_KEY</code> in your environment to enable importing.
             </p>
           ) : null}
@@ -378,7 +378,7 @@ export function ExcelUpload({ adminReady }: { adminReady: boolean }) {
       ) : null}
 
       {summary ? (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm flex items-center gap-2">
+        <div className="rounded-lg border bg-muted text-foreground px-4 py-3 text-sm flex items-center gap-2">
           <Check className="h-4 w-4 shrink-0" /> {summary} — see{" "}
           <Link href="/companies" className="underline font-medium">Companies</Link> and{" "}
           <Link href="/contacts" className="underline font-medium">Contacts</Link>.

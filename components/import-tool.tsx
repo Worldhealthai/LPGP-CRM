@@ -99,7 +99,7 @@ export function ImportTool({ lushaReady, adminReady }: { lushaReady: boolean; ad
   return (
     <div className="space-y-6">
       {!lushaReady ? (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+        <div className="rounded-lg border bg-muted text-foreground px-4 py-3 text-sm">
           <code className="font-mono text-xs">LUSHA_API_KEY</code> isn&apos;t set — searches will
           fail until you add it to your environment.
         </div>
@@ -197,7 +197,7 @@ export function ImportTool({ lushaReady, adminReady }: { lushaReady: boolean; ad
           </div>
 
           {!adminReady ? (
-            <div className="px-4 py-2 text-xs text-amber-700 bg-amber-50 border-b">
+            <div className="px-4 py-2 text-xs text-muted-foreground bg-muted border-b">
               Set <code className="font-mono">SUPABASE_SERVICE_ROLE_KEY</code> to enable importing.
             </div>
           ) : null}
@@ -236,7 +236,7 @@ export function ImportTool({ lushaReady, adminReady }: { lushaReady: boolean; ad
       ) : null}
 
       {summary ? (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 px-4 py-3 text-sm flex items-center gap-2">
+        <div className="rounded-lg border bg-muted text-foreground px-4 py-3 text-sm flex items-center gap-2">
           <Check className="h-4 w-4" /> {summary} — see the{" "}
           <Link href="/companies" className="underline font-medium">Companies</Link> and{" "}
           <Link href="/contacts" className="underline font-medium">Contacts</Link> tabs.

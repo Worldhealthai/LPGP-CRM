@@ -30,8 +30,8 @@ export const CATEGORIES: Record<Category, CategoryMeta> = {
       "Sovereign wealth fund",
       "Fund of funds",
     ],
-    accent: "bg-sky-50 text-sky-700 border-sky-200",
-    dot: "bg-sky-500",
+    accent: "bg-secondary text-foreground/80 border-border",
+    dot: "bg-foreground/30",
   },
   GP: {
     key: "GP",
@@ -49,8 +49,8 @@ export const CATEGORIES: Record<Category, CategoryMeta> = {
       "Real assets",
       "Infrastructure",
     ],
-    accent: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    dot: "bg-emerald-500",
+    accent: "bg-secondary text-foreground/80 border-border",
+    dot: "bg-foreground/55",
   },
   SP: {
     key: "SP",
@@ -68,8 +68,8 @@ export const CATEGORIES: Record<Category, CategoryMeta> = {
       "Technology vendor",
       "Consulting",
     ],
-    accent: "bg-amber-50 text-amber-700 border-amber-200",
-    dot: "bg-amber-500",
+    accent: "bg-secondary text-foreground/80 border-border",
+    dot: "bg-foreground/85",
   },
 };
 
