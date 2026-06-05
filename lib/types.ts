@@ -1,5 +1,7 @@
 export type Category = "LP" | "GP" | "SP";
 
+export type Allocation = { label: string; value: number };
+
 export type Company = {
   id: string;
   name: string;
@@ -16,6 +18,17 @@ export type Company = {
   employee_range: string | null;
   aum: string | null;
   lusha_company_id: string | null;
+  // Profile / visualization fields (migration 0002)
+  aum_usd: number | null;
+  region: string | null;
+  status: string | null;
+  investment_thesis: string | null;
+  check_size: string | null;
+  preferred_stages: string | null;
+  geographic_focus: string | null;
+  active_funds: number | null;
+  allocations: Allocation[];
+  in_portfolio: boolean;
   created_at: string;
   updated_at: string;
 };

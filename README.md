@@ -25,10 +25,14 @@ pnpm dev                           # http://localhost:3000
 
 ### 1. Create the database
 
-In the Supabase dashboard → **SQL Editor**, paste and run
-[`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql). That
-creates the `companies`, `contacts` and `notes` tables, the `LP/GP/SP` enum and
-row-level-security policies.
+In the Supabase dashboard → **SQL Editor**, run the migrations in order:
+
+1. [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) —
+   creates the `companies`, `contacts` and `notes` tables, the `LP/GP/SP` enum
+   and row-level-security policies.
+2. [`supabase/migrations/0002_company_profile.sql`](supabase/migrations/0002_company_profile.sql)
+   — adds the profile/visualization fields (AUM, asset allocation, investment
+   thesis, active funds, portfolio flag) that power the company profile charts.
 
 ### 2. Environment variables
 

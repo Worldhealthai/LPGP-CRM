@@ -30,7 +30,15 @@ const COMPANY_FIELDS = new Set([
   "hq_location",
   "employee_range",
   "aum",
+  "region",
+  "status",
+  "investment_thesis",
+  "check_size",
+  "preferred_stages",
+  "geographic_focus",
 ]);
+
+const COMPANY_NUMERIC_FIELDS = new Set(["aum_usd", "active_funds"]);
 
 function sanitize(patch: Record<string, unknown>, allowed: Set<string>) {
   const out: Record<string, string | null> = {};
@@ -64,9 +72,50 @@ export async function updateCompany(
 ): Promise<ActionResult> {
   const supabase = getAdminClient();
   if (!supabase) return { ok: false, error: "Supabase service role not configured" };
-  const update = sanitize(patch, COMPANY_FIELDS);
+
+  const update: Record<string, string | number | null> = sanitize(patch, COMPANY_FIELDS);
+  // Numeric fields: strip currency symbols / commas, parse, null when empty/NaN.
+  for (const [key, value] of Object.entries(patch)) {
+    if (!COMPANY_NUMERIC_FIELDS.has(key) || typeof value !== "string") continue;
+    const raw = value.replace(/[$,\s]/g, "").trim();
+    if (raw === "") {
+      update[key] = null;
+    } else {
+      const num = Number(raw);
+      if (!Number.isNaN(num)) update[key] = key === "active_funds" ? Math.round(num) : num;
+    }
+  }
+
   if (Object.keys(update).length === 0) return { ok: true };
   const { error } = await supabase.from("companies").update(update).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/companies/${id}`);
+  revalidatePath("/companies");
+  return { ok: true };
+}
+
+export async function updateCompanyAllocations(
+  id: string,
+  allocations: { label: string; value: number }[],
+): Promise<ActionResult> {
+  const supabase = getAdminClient();
+  if (!supabase) return { ok: false, error: "Supabase service role not configured" };
+  const clean = (Array.isArray(allocations) ? allocations : [])
+    .map((a) => ({
+      label: typeof a.label === "string" ? a.label.trim() : "",
+      value: Math.max(0, Math.min(100, Number(a.value) || 0)),
+    }))
+    .filter((a) => a.label !== "");
+  const { error } = await supabase.from("companies").update({ allocations: clean }).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/companies/${id}`);
+  return { ok: true };
+}
+
+export async function setPortfolio(id: string, value: boolean): Promise<ActionResult> {
+  const supabase = getAdminClient();
+  if (!supabase) return { ok: false, error: "Supabase service role not configured" };
+  const { error } = await supabase.from("companies").update({ in_portfolio: value }).eq("id", id);
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/companies/${id}`);
   revalidatePath("/companies");
