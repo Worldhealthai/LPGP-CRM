@@ -17,7 +17,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const result = await lushaContactSearch({ names: [q], searchText: q, size: 10 });
+    const result = await lushaContactSearch({ names: [q], size: 10 });
     return NextResponse.json({
       requestId: result.requestId,
       total: result.total,

@@ -32,7 +32,6 @@ export type LushaSearchParams = {
   companyNames?: string[];
   companyDomains?: string[];
   names?: string[];
-  searchText?: string;
   page?: number;
   size?: number;
 };
@@ -136,7 +135,6 @@ export async function lushaContactSearch(
     filters,
     pages: { page: params.page ?? 0, size: Math.min(params.size ?? 40, 50) },
   };
-  if (params.searchText) reqBody.searchText = params.searchText;
 
   const json = await post("/prospecting/contact/search", reqBody);
 
