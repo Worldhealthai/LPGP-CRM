@@ -205,9 +205,9 @@ export default async function CompanyProfile({ params }: { params: Promise<{ id:
               <EditableField entity="company" id={company.id} field="sub_type" value={company.sub_type} label="Type" placeholder={meta.subTypes[0]} />
               <EditableField entity="company" id={company.id} field="status" value={company.status} label="Status" placeholder="e.g. Active Allocator" />
               <EditableField entity="company" id={company.id} field="region" value={company.region} label="Region" placeholder="e.g. Brazil / Latin America & Caribbean" />
-              <EditableField entity="company" id={company.id} field="website" value={company.website} label="Website" href={(v) => v} />
+              <EditableField entity="company" id={company.id} field="website" value={company.website} label="Website" link="url" />
               <EditableField entity="company" id={company.id} field="domain" value={company.domain} label="Domain" />
-              <EditableField entity="company" id={company.id} field="linkedin_url" value={company.linkedin_url} label="LinkedIn" href={(v) => v} />
+              <EditableField entity="company" id={company.id} field="linkedin_url" value={company.linkedin_url} label="LinkedIn" link="url" />
               <EditableField entity="company" id={company.id} field="country" value={company.country} label="Country" />
               <EditableField entity="company" id={company.id} field="city" value={company.city} label="City" />
               <EditableField entity="company" id={company.id} field="hq_location" value={company.hq_location} label="HQ" />

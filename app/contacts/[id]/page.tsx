@@ -185,9 +185,9 @@ export default async function ContactProfile({ params }: { params: Promise<{ id:
               <EditableField entity="contact" id={contact.id} field="job_title" value={contact.job_title} label="Job title" />
               <EditableField entity="contact" id={contact.id} field="department" value={contact.department} label="Department" />
               <EditableField entity="contact" id={contact.id} field="seniority" value={contact.seniority} label="Seniority" />
-              <EditableField entity="contact" id={contact.id} field="email" value={contact.email} label="Email" href={(v) => `mailto:${v}`} />
-              <EditableField entity="contact" id={contact.id} field="phone" value={contact.phone} label="Phone" href={(v) => `tel:${v}`} />
-              <EditableField entity="contact" id={contact.id} field="linkedin_url" value={contact.linkedin_url} label="LinkedIn" href={(v) => v} />
+              <EditableField entity="contact" id={contact.id} field="email" value={contact.email} label="Email" link="email" />
+              <EditableField entity="contact" id={contact.id} field="phone" value={contact.phone} label="Phone" link="tel" />
+              <EditableField entity="contact" id={contact.id} field="linkedin_url" value={contact.linkedin_url} label="LinkedIn" link="url" />
               <EditableField entity="contact" id={contact.id} field="city" value={contact.city} label="City" />
               <EditableField entity="contact" id={contact.id} field="country" value={contact.country} label="Country" />
             </div>

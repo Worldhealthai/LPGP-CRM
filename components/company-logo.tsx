@@ -1,8 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { initials } from "@/lib/utils";
 
 /**
- * Company avatar. Uses Clearbit's logo service by domain when available,
- * with a tinted initials fallback (plain <img> so a 404 doesn't break SSR).
+ * Company avatar. Tries Clearbit's logo service by domain and falls back to
+ * tinted initials when the logo can't be loaded (bad/unknown domain).
  */
 export function CompanyLogo({
   name,
@@ -13,14 +16,16 @@ export function CompanyLogo({
   domain?: string | null;
   size?: number;
 }) {
-  const src = domain ? `https://logo.clearbit.com/${domain}` : null;
+  const [failed, setFailed] = useState(false);
+  const clean = domain?.trim().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+  const src = clean && !failed ? `https://logo.clearbit.com/${clean}` : null;
+
   return (
     <span
       className="relative inline-grid place-items-center overflow-hidden rounded-md border bg-secondary text-secondary-foreground font-semibold shrink-0"
       style={{ width: size, height: size, fontSize: Math.round(size * 0.34) }}
-      aria-hidden
     >
-      <span>{initials(name)}</span>
+      <span aria-hidden>{initials(name)}</span>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -30,6 +35,7 @@ export function CompanyLogo({
           height={size}
           className="absolute inset-0 h-full w-full object-contain bg-white"
           loading="lazy"
+          onError={() => setFailed(true)}
         />
       ) : null}
     </span>

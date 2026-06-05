@@ -7,6 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
+// `link` is a serializable descriptor (Server Components can't pass functions
+// to Client Components). EditableField builds the href itself.
+function toHref(link: "url" | "email" | "tel", value: string): string {
+  if (link === "email") return `mailto:${value}`;
+  if (link === "tel") return `tel:${value}`;
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
 export function EditableField({
   entity,
   id,
@@ -15,7 +23,7 @@ export function EditableField({
   label,
   placeholder,
   multiline = false,
-  href,
+  link,
 }: {
   entity: "contact" | "company";
   id: string;
@@ -24,7 +32,7 @@ export function EditableField({
   label: string;
   placeholder?: string;
   multiline?: boolean;
-  href?: (v: string) => string;
+  link?: "url" | "email" | "tel";
 }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(value ?? "");
@@ -86,9 +94,9 @@ export function EditableField({
         <div className="mt-1 flex items-start justify-between gap-2">
           <div className="min-w-0 text-sm">
             {value ? (
-              href ? (
+              link ? (
                 <a
-                  href={href(value)}
+                  href={toHref(link, value)}
                   target="_blank"
                   rel="noreferrer"
                   className="text-primary hover:underline break-all"
