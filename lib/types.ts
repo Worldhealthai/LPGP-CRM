@@ -57,6 +57,19 @@ export type Contact = {
   updated_at: string;
 };
 
+export type Fund = {
+  id: string;
+  company_id: string | null;
+  name: string;
+  vintage_year: number | null;
+  fund_size_usd: number | null;
+  target_size_usd: number | null;
+  strategy: string | null;
+  geography: string | null;
+  status: string | null;
+  created_at: string;
+};
+
 export type Note = {
   id: string;
   entity_type: "company" | "contact";

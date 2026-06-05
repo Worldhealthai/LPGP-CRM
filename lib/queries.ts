@@ -1,5 +1,5 @@
 import { getReadClient } from "./supabase/server";
-import type { Category, Company, Contact, ContactWithCompany, Note } from "./types";
+import type { Category, Company, Contact, ContactWithCompany, Fund, Note } from "./types";
 
 export type CategoryCounts = Record<Category, number> & { total: number };
 
@@ -119,6 +119,18 @@ export async function getContactsForCompany(companyId: string): Promise<Contact[
     .eq("company_id", companyId)
     .order("full_name");
   return (data as Contact[]) ?? [];
+}
+
+export async function getFundsForCompany(companyId: string): Promise<Fund[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("funds")
+    .select("*")
+    .eq("company_id", companyId)
+    .order("vintage_year", { ascending: false, nullsFirst: false });
+  if (error || !data) return [];
+  return data as Fund[];
 }
 
 export async function getNotes(

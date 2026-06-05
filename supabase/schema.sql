@@ -91,6 +91,21 @@ create table if not exists public.notes (
 );
 create index if not exists notes_entity_idx on public.notes (entity_type, entity_id);
 
+-- --- Funds (fund-level / deal data per manager) ----------------------------
+create table if not exists public.funds (
+  id              uuid primary key default gen_random_uuid(),
+  company_id      uuid references public.companies (id) on delete cascade,
+  name            text not null,
+  vintage_year    integer,
+  fund_size_usd   numeric,
+  target_size_usd numeric,
+  strategy        text,
+  geography       text,
+  status          text,
+  created_at      timestamptz not null default now()
+);
+create index if not exists funds_company_idx on public.funds (company_id);
+
 -- --- updated_at trigger ----------------------------------------------------
 create or replace function public.set_updated_at()
 returns trigger as $$
@@ -116,6 +131,10 @@ create trigger contacts_set_updated_at
 alter table public.companies enable row level security;
 alter table public.contacts  enable row level security;
 alter table public.notes     enable row level security;
+alter table public.funds     enable row level security;
+
+drop policy if exists "funds_read" on public.funds;
+create policy "funds_read" on public.funds for select using (true);
 
 drop policy if exists "companies_read" on public.companies;
 create policy "companies_read" on public.companies for select using (true);

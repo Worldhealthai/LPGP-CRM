@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Globe, Link2, MapPin, Users, PieChart } from "lucide-react";
-import { getCompany, getContactsForCompany, getNotes } from "@/lib/queries";
+import { ArrowLeft, Globe, Link2, MapPin, Users, PieChart, Layers } from "lucide-react";
+import { getCompany, getContactsForCompany, getFundsForCompany, getNotes } from "@/lib/queries";
 import { CATEGORIES } from "@/lib/categories";
-import { formatAumLong } from "@/lib/utils";
+import { formatAumLong, formatUsd } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
 import { CompanyLogo } from "@/components/company-logo";
 import { PersonAvatar } from "@/components/person-avatar";
@@ -30,8 +30,9 @@ export default async function CompanyProfile({ params }: { params: Promise<{ id:
   const company = await getCompany(id);
   if (!company) notFound();
 
-  const [contacts, notes] = await Promise.all([
+  const [contacts, funds, notes] = await Promise.all([
     getContactsForCompany(id),
+    getFundsForCompany(id),
     getNotes("company", id),
   ]);
   const meta = CATEGORIES[company.category];
@@ -145,6 +146,55 @@ export default async function CompanyProfile({ params }: { params: Promise<{ id:
           <AllocationBars data={allocations} />
         </div>
       </div>
+
+      {/* Funds */}
+      {funds.length > 0 ? (
+        <section className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b">
+            <Layers className="h-4 w-4 text-muted-foreground" />
+            <h2 className="font-semibold">Funds</h2>
+            <span className="text-sm text-muted-foreground">({funds.length})</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-5 py-2">Fund</th>
+                  <th className="text-left font-medium px-3 py-2">Strategy</th>
+                  <th className="text-left font-medium px-3 py-2">Vintage</th>
+                  <th className="text-right font-medium px-3 py-2">Size</th>
+                  <th className="text-left font-medium px-5 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {funds.map((f) => (
+                  <tr key={f.id} className="border-t">
+                    <td className="px-5 py-2.5 font-medium">{f.name}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{f.strategy ?? "—"}</td>
+                    <td className="px-3 py-2.5 tabular">{f.vintage_year ?? "—"}</td>
+                    <td className="px-3 py-2.5 text-right tabular whitespace-nowrap">
+                      {f.fund_size_usd != null
+                        ? formatUsd(f.fund_size_usd)
+                        : f.target_size_usd != null
+                          ? `${formatUsd(f.target_size_usd)} target`
+                          : "—"}
+                    </td>
+                    <td className="px-5 py-2.5">
+                      {f.status ? (
+                        <span className="inline-flex items-center rounded-md border bg-secondary px-2 py-0.5 text-xs">
+                          {f.status}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {/* People */}
       <section className="rounded-xl border bg-card">
