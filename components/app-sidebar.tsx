@@ -8,6 +8,7 @@ import {
   Building2,
   Users,
   Upload,
+  Star,
   Settings,
   Menu,
   X,
@@ -20,6 +21,7 @@ const MENU = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/contacts", label: "Contacts", icon: Users },
+  { href: "/portfolio", label: "Portfolio", icon: Star },
   { href: "/import", label: "Import", icon: Upload },
 ];
 

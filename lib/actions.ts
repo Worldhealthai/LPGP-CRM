@@ -16,6 +16,9 @@ const CONTACT_FIELDS = new Set([
   "linkedin_url",
   "country",
   "city",
+  "priority",
+  "status",
+  "last_contacted",
 ]);
 
 const COMPANY_FIELDS = new Set([
@@ -63,6 +66,19 @@ export async function updateContact(
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/contacts/${id}`);
   revalidatePath("/contacts");
+  return { ok: true };
+}
+
+export async function setContactRating(id: string, value: number): Promise<ActionResult> {
+  const supabase = getAdminClient();
+  if (!supabase) return { ok: false, error: "Supabase service role not configured" };
+  const v = Number.isFinite(value) ? Math.max(0, Math.min(5, Math.round(value))) : 0;
+  const { error } = await supabase
+    .from("contacts")
+    .update({ relationship_strength: v === 0 ? null : v })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/contacts/${id}`);
   return { ok: true };
 }
 

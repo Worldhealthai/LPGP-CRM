@@ -40,6 +40,18 @@ export async function listCompanies(opts: {
   return data as Company[];
 }
 
+export async function listPortfolioCompanies(): Promise<Company[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("in_portfolio", true)
+    .order("name");
+  if (error || !data) return [];
+  return data as Company[];
+}
+
 export async function getCompany(id: string): Promise<Company | null> {
   const supabase = getReadClient();
   if (!supabase) return null;

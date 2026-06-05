@@ -48,6 +48,11 @@ export type Contact = {
   country: string | null;
   city: string | null;
   lusha_contact_id: string | null;
+  // Relationship fields (migration 0003)
+  relationship_strength: number | null;
+  priority: string | null;
+  status: string | null;
+  last_contacted: string | null;
   created_at: string;
   updated_at: string;
 };
