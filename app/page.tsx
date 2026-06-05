@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { StatCard } from "@/components/stat-card";
 import { SetupNotice } from "@/components/setup-notice";
+import { DashboardSearch } from "@/components/dashboard-search";
 import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
@@ -32,6 +33,8 @@ export default async function DashboardPage() {
       </div>
 
       {!configured ? <SetupNotice /> : null}
+
+      <DashboardSearch />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="All firms" value={counts.total} sublabel="companies tracked" href="/companies" />
