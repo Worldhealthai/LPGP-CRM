@@ -6,6 +6,8 @@ import { Check, Loader2, Trash2 } from "lucide-react";
 import type { LeadWithRefs } from "@/lib/types";
 import { LEAD_STAGES, MARKETS, MARKET_LABELS } from "@/lib/pipeline";
 import { updateLead, assignLead, deleteLead } from "@/lib/crm-actions";
+import { ConfirmModal } from "@/components/ui/modal";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
@@ -101,20 +103,20 @@ export function LeadEditor({
         </div>
         <div>
           <Label className="mb-1.5">Stage</Label>
-          <select className={inputCls} value={f.stage} onChange={(e) => set("stage", e.target.value)} disabled={!canEdit}>
+          <NativeSelect className="w-full" value={f.stage} onChange={(e) => set("stage", e.target.value)} disabled={!canEdit}>
             {LEAD_STAGES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div>
           <Label className="mb-1.5">Market</Label>
-          <select className={inputCls} value={f.market} onChange={(e) => set("market", e.target.value)} disabled={!canEdit}>
+          <NativeSelect className="w-full" value={f.market} onChange={(e) => set("market", e.target.value)} disabled={!canEdit}>
             <option value="">—</option>
             {markets.map((m) => (
               <option key={m} value={m}>{MARKET_LABELS[m] ?? m}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         <div>
           <Label className="mb-1.5">Contact name</Label>
@@ -155,12 +157,12 @@ export function LeadEditor({
         {isAdmin ? (
           <div>
             <Label className="mb-1.5">Owner (admin)</Label>
-            <select className={inputCls} value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setSaved(false); }}>
+            <NativeSelect className="w-full" value={ownerId} onChange={(e) => { setOwnerId(e.target.value); setSaved(false); }}>
               <option value="">Unassigned</option>
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>{p.full_name ?? "Unnamed"}</option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
         ) : null}
       </div>
@@ -175,26 +177,22 @@ export function LeadEditor({
           </Button>
           {saved ? <span className="text-sm text-muted-foreground">Saved</span> : null}
           <div className="ml-auto">
-            {confirmDelete ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Delete this lead?</span>
-                <Button variant="destructive" size="sm" onClick={onDelete} disabled={pending}>
-                  <Trash2 className="h-4 w-4" /> Delete
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)} disabled={pending}>
-                  Cancel
-                </Button>
-              </span>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmDelete(true)}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" /> Delete lead
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmDelete(true)}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4" /> Delete lead
+            </Button>
+            <ConfirmModal
+              open={confirmDelete}
+              onClose={() => setConfirmDelete(false)}
+              onConfirm={onDelete}
+              pending={pending}
+              title="Delete this lead?"
+              description={`"${lead.company_name ?? "This lead"}" and its notes will be permanently removed. This can't be undone.`}
+            />
           </div>
         </div>
       ) : null}
