@@ -18,23 +18,21 @@ async function hydrate(
   const ownerIds = [...new Set(leads.map((l) => l.owner_id).filter(Boolean))] as string[];
   const companyIds = [...new Set(leads.map((l) => l.company_id).filter(Boolean))] as string[];
 
+  // Both lookups in flight at once — halves hydration latency.
+  const [ownersRes, companiesRes] = await Promise.all([
+    ownerIds.length
+      ? supabase.from("profiles").select("id, full_name, email").in("id", ownerIds)
+      : Promise.resolve({ data: [] as { id: string }[] }),
+    companyIds.length
+      ? supabase.from("companies").select("id, name, category, domain").in("id", companyIds)
+      : Promise.resolve({ data: [] as { id: string }[] }),
+  ]);
+
   const owners = new Map<string, LeadOwner>();
-  if (ownerIds.length) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", ownerIds);
-    for (const o of data ?? []) owners.set(o.id, o as LeadOwner);
-  }
+  for (const o of ownersRes.data ?? []) owners.set(o.id, o as LeadOwner);
 
   const companies = new Map<string, LeadWithRefs["company"]>();
-  if (companyIds.length) {
-    const { data } = await supabase
-      .from("companies")
-      .select("id, name, category, domain")
-      .in("id", companyIds);
-    for (const c of data ?? []) companies.set(c.id, c as LeadWithRefs["company"]);
-  }
+  for (const c of companiesRes.data ?? []) companies.set(c.id, c as unknown as LeadWithRefs["company"]);
 
   return leads.map((l) => ({
     ...l,
