@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { deleteCompany, deleteContact } from "@/lib/actions";
+import { ConfirmModal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 
 export function DeleteButton({ kind, id }: { kind: "company" | "contact"; id: string }) {
   const router = useRouter();
-  const [confirming, setConfirming] = useState(false);
+  const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -25,33 +26,29 @@ export function DeleteButton({ kind, id }: { kind: "company" | "contact"; id: st
     });
   }
 
-  if (!confirming) {
-    return (
+  return (
+    <>
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setConfirming(true)}
+        onClick={() => setOpen(true)}
         className="text-destructive hover:text-destructive hover:bg-destructive/10"
       >
         <Trash2 className="h-4 w-4" /> Delete {kind}
       </Button>
-    );
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-muted-foreground">
-        Delete this {kind}
-        {kind === "company" ? " and its contacts" : ""}? This can&apos;t be undone.
-      </span>
-      <Button variant="destructive" size="sm" onClick={onDelete} disabled={pending}>
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-        Yes, delete
-      </Button>
-      <Button variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={pending}>
-        Cancel
-      </Button>
-      {error ? <span className="text-xs text-destructive">{error}</span> : null}
-    </div>
+      <ConfirmModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onConfirm={onDelete}
+        pending={pending}
+        error={error}
+        title={`Delete this ${kind}?`}
+        description={
+          kind === "company"
+            ? "The company and all of its contacts will be permanently removed. This can't be undone."
+            : "This contact will be permanently removed. This can't be undone."
+        }
+      />
+    </>
   );
 }

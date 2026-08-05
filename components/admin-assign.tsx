@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { assignLead } from "@/lib/crm-actions";
+import { NativeSelect } from "@/components/ui/native-select";
 
 type ProfileLite = { id: string; full_name: string | null };
 
@@ -29,18 +30,13 @@ export function AssignSelect({
   }
 
   return (
-    <select
-      value={val}
-      onChange={onChange}
-      disabled={pending}
-      className="h-8 rounded-md border border-input bg-card px-2 text-sm shadow-xs outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:opacity-60"
-    >
+    <NativeSelect className="w-44" value={val} onChange={onChange} disabled={pending}>
       <option value="">Unassigned</option>
       {profiles.map((p) => (
         <option key={p.id} value={p.id}>
           {p.full_name ?? "Unnamed"}
         </option>
       ))}
-    </select>
+    </NativeSelect>
   );
 }

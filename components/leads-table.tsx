@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import type { LeadWithRefs } from "@/lib/types";
 import { LEAD_STAGES, STAGE_META, MARKET_LABELS } from "@/lib/pipeline";
 import { NewLeadDialog } from "@/components/new-lead-dialog";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Input } from "@/components/ui/input";
 import { formatUsd } from "@/lib/utils";
 import { initials } from "@/lib/utils";
@@ -13,9 +14,6 @@ import { cn } from "@/lib/utils";
 
 type CompanyLite = { id: string; name: string; category: string };
 type ProfileLite = { id: string; full_name: string | null };
-
-const selectCls =
-  "h-9 rounded-md border border-input bg-card px-3 text-sm shadow-xs outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]";
 
 function StageBadge({ stage }: { stage: string }) {
   const meta = STAGE_META[stage as keyof typeof STAGE_META];
@@ -76,31 +74,33 @@ export function LeadsTable({
     <div className="space-y-4">
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <select className={selectCls} value={market} onChange={(e) => setMarket(e.target.value)}>
+          <NativeSelect className="w-36" value={market} onChange={(e) => setMarket(e.target.value)}>
             <option value="ALL">All markets</option>
             {Object.keys(MARKET_LABELS).map((m) => (
               <option key={m} value={m}>
                 {MARKET_LABELS[m]}
               </option>
             ))}
-          </select>
-          <select className={selectCls} value={stage} onChange={(e) => setStage(e.target.value)}>
+          </NativeSelect>
+          <NativeSelect className="w-40" value={stage} onChange={(e) => setStage(e.target.value)}>
             <option value="ALL">All stages</option>
             {LEAD_STAGES.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
             ))}
-          </select>
-          <select className={selectCls} value={owner} onChange={(e) => setOwner(e.target.value)}>
+          </NativeSelect>
+          <NativeSelect className="w-40" value={owner} onChange={(e) => setOwner(e.target.value)}>
             <option value="ALL">All owners</option>
             <option value="ME">My leads</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.full_name ?? "Unnamed"}
-              </option>
-            ))}
-          </select>
+            {profiles
+              .filter((p) => p.id !== currentUserId)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name ?? "Unnamed"}
+                </option>
+              ))}
+          </NativeSelect>
           <div className="relative w-full sm:w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="pl-9" />

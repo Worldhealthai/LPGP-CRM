@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth";
 import { listLeads, listProfiles } from "@/lib/crm";
-import { listCompanies } from "@/lib/queries";
+import { listCompaniesLite } from "@/lib/queries";
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { PipelineBoard } from "@/components/pipeline-board";
 import { PageHeader } from "@/components/page-header";
@@ -10,13 +10,12 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Pipeline — LPGP Connect" };
 
 export default async function PipelinePage() {
-  const [user, leads, profiles, companies] = await Promise.all([
+  const [user, leads, profiles, companyLite] = await Promise.all([
     getSessionUser(),
     listLeads(),
     listProfiles(),
-    listCompanies(),
+    listCompaniesLite(),
   ]);
-  const companyLite = companies.map((c) => ({ id: c.id, name: c.name, category: c.category }));
   const profileLite = profiles.map((p) => ({ id: p.id, full_name: p.full_name }));
 
   return (
