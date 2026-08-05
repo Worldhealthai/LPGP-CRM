@@ -1,3 +1,5 @@
+import type { LeadStage } from "./pipeline";
+
 export type Category = "LP" | "GP" | "SP";
 
 export type Allocation = { label: string; value: number };
@@ -114,7 +116,7 @@ export type ClientLink = {
 
 export type Note = {
   id: string;
-  entity_type: "company" | "contact";
+  entity_type: "company" | "contact" | "lead";
   entity_id: string;
   body: string;
   author: string | null;
@@ -123,4 +125,40 @@ export type Note = {
 
 export type ContactWithCompany = Contact & {
   company: Pick<Company, "id" | "name" | "category" | "logo_url"> | null;
+};
+
+// --- CRM leads -------------------------------------------------------------
+export type Profile = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  role: string;
+};
+
+export type Lead = {
+  id: string;
+  owner_id: string | null;
+  company_id: string | null;
+  company_name: string | null;
+  category: Category | null;
+  contact_name: string | null;
+  contact_title: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  linkedin_url: string | null;
+  market: string | null;
+  stage: LeadStage;
+  value_usd: number | null;
+  source: string | null;
+  next_step: string | null;
+  next_step_date: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LeadOwner = { id: string; full_name: string | null; email: string | null };
+
+export type LeadWithRefs = Lead & {
+  owner: LeadOwner | null;
+  company: { id: string; name: string; category: Category; domain: string | null } | null;
 };

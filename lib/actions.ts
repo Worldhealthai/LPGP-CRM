@@ -183,8 +183,16 @@ export async function setPortfolio(id: string, value: boolean): Promise<ActionRe
   return { ok: true };
 }
 
+type NoteEntity = "company" | "contact" | "lead";
+
+function notePath(entityType: NoteEntity, entityId: string): string {
+  if (entityType === "company") return `/companies/${entityId}`;
+  if (entityType === "contact") return `/contacts/${entityId}`;
+  return `/leads/${entityId}`;
+}
+
 export async function addNote(
-  entityType: "company" | "contact",
+  entityType: NoteEntity,
   entityId: string,
   body: string,
   author?: string,
@@ -200,19 +208,19 @@ export async function addNote(
     author: author?.trim() || null,
   });
   if (error) return { ok: false, error: error.message };
-  revalidatePath(`/${entityType === "company" ? "companies" : "contacts"}/${entityId}`);
+  revalidatePath(notePath(entityType, entityId));
   return { ok: true };
 }
 
 export async function deleteNote(
   id: string,
-  entityType: "company" | "contact",
+  entityType: NoteEntity,
   entityId: string,
 ): Promise<ActionResult> {
   const supabase = getAdminClient();
   if (!supabase) return { ok: false, error: "Supabase service role not configured" };
   const { error } = await supabase.from("notes").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
-  revalidatePath(`/${entityType === "company" ? "companies" : "contacts"}/${entityId}`);
+  revalidatePath(notePath(entityType, entityId));
   return { ok: true };
 }

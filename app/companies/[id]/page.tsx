@@ -21,6 +21,7 @@ import { PortfolioButton } from "@/components/portfolio-button";
 import { ReportButton } from "@/components/report-button";
 import { AllocationEditor } from "@/components/allocation-editor";
 import { DeleteButton } from "@/components/delete-button";
+import { AddToPipelineButton } from "@/components/add-to-pipeline-button";
 import { Donut, allocationShade } from "@/components/charts/donut";
 import { AllocationBars } from "@/components/charts/allocation-bars";
 import { Separator } from "@/components/ui/separator";
@@ -86,6 +87,7 @@ export default async function CompanyProfile({ params }: { params: Promise<{ id:
           </div>
         </div>
         <div className="flex flex-wrap gap-2 shrink-0" data-no-print>
+          <AddToPipelineButton companyId={company.id} />
           <ReportButton />
           <PortfolioButton id={company.id} initial={company.in_portfolio} />
         </div>

@@ -1,7 +1,7 @@
 -- ==================================================================
 -- LPGP Connect CRM — COMPLETE SETUP (schema + all seed data)
--- Paste this whole file into Supabase -> SQL Editor and Run.
--- Idempotent: safe to re-run.
+-- Paste into Supabase -> SQL Editor and Run. Idempotent.
+-- Includes CRM auth (profiles) + leads pipeline tables.
 -- ==================================================================
 
 
@@ -186,6 +186,101 @@ create policy "contacts_read" on public.contacts for select using (true);
 
 drop policy if exists "notes_read" on public.notes;
 create policy "notes_read" on public.notes for select using (true);
+
+-- ###########################################################################
+-- ## CRM: auth profiles + leads pipeline
+-- ###########################################################################
+
+-- --- Profiles (one row per Supabase Auth user) -----------------------------
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users (id) on delete cascade,
+  email      text,
+  full_name  text,
+  role       text not null default 'member',   -- 'member' | 'admin'
+  created_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+drop policy if exists "profiles_read" on public.profiles;
+create policy "profiles_read" on public.profiles for select using (true);
+
+-- Auto-create a profile whenever a new auth user is created.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data ->> 'full_name', split_part(new.email, '@', 1))
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Backfill profiles for any users that already exist.
+insert into public.profiles (id, email, full_name)
+select u.id, u.email, coalesce(u.raw_user_meta_data ->> 'full_name', split_part(u.email, '@', 1))
+from auth.users u
+on conflict (id) do nothing;
+
+-- --- Lead pipeline stages --------------------------------------------------
+do $$ begin
+  create type lead_stage as enum ('New', 'Contacted', 'Discussing', 'Proposal Sent', 'Confirmed', 'Blown Out');
+exception
+  when duplicate_object then null;
+end $$;
+
+-- --- Leads -----------------------------------------------------------------
+create table if not exists public.leads (
+  id              uuid primary key default gen_random_uuid(),
+  owner_id        uuid references public.profiles (id) on delete set null,
+  company_id      uuid references public.companies (id) on delete set null,
+  company_name    text,                      -- denormalised (net-new or display)
+  category        company_category,          -- optional LP/GP/SP tag
+  contact_name    text,
+  contact_title   text,
+  contact_email   text,
+  contact_phone   text,
+  linkedin_url    text,
+  market          text,                      -- 'US', 'UK', ...
+  stage           lead_stage not null default 'New',
+  value_usd       numeric,
+  source          text,
+  next_step       text,
+  next_step_date  date,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists leads_owner_idx on public.leads (owner_id);
+create index if not exists leads_stage_idx on public.leads (stage);
+create index if not exists leads_market_idx on public.leads (market);
+create index if not exists leads_company_idx on public.leads (company_id);
+
+drop trigger if exists leads_set_updated_at on public.leads;
+create trigger leads_set_updated_at
+  before update on public.leads
+  for each row execute function public.set_updated_at();
+
+alter table public.leads enable row level security;
+drop policy if exists "leads_read" on public.leads;
+create policy "leads_read" on public.leads for select using (true);
+
+-- --- Notes can now attach to a lead too ------------------------------------
+alter table public.notes drop constraint if exists notes_entity_type_check;
+alter table public.notes
+  add constraint notes_entity_type_check check (entity_type in ('company', 'contact', 'lead'));
+
 
 -- ##################################################################
 -- ## seed.sql
@@ -376,6 +471,7 @@ insert into public.contacts (company_id, first_name, last_name, job_title, senio
 select (select id from public.companies where lower(name)=lower('CPP Investments') limit 1), 'Maximilian','Biagosch','Senior Managing Director','Director','General Management','maximilian.biagosch@cppinvestments.com','https://www.linkedin.com/in/maximilian-biagosch-79aa369','United Kingdom','London','711450727'
 where not exists (select 1 from public.contacts where lusha_contact_id='711450727');
 
+
 -- ##################################################################
 -- ## seed_companies_2.sql
 -- ##################################################################
@@ -437,6 +533,7 @@ insert into public.companies (name, category, sub_type, region, status, country,
 select 'Latham & Watkins', 'SP', 'Law firm', 'North America', 'Vendor', 'United States', 'Los Angeles', 'Los Angeles, CA', 'https://www.lw.com', 'lw.com', '7,000+', 'Global law firm with leading fund formation, private equity, finance and capital-markets practices.'
 where not exists (select 1 from public.companies where lower(name)=lower('Latham & Watkins'));
 
+
 -- ##################################################################
 -- ## seed_companies_3.sql
 -- ##################################################################
@@ -497,6 +594,7 @@ where not exists (select 1 from public.companies where lower(name)=lower('Cliffo
 insert into public.companies (name, category, sub_type, region, status, country, city, hq_location, website, domain, employee_range, investment_thesis)
 select 'Aztec Group', 'SP', 'Fund administrator', 'Europe', 'Vendor', 'Jersey', 'St Helier', 'St Helier, Jersey', 'https://www.aztecgroup.co.uk', 'aztecgroup.co.uk', '2,000+', 'Independent European fund and corporate services administrator specialising in private equity, real assets, debt and venture funds.'
 where not exists (select 1 from public.companies where lower(name)=lower('Aztec Group'));
+
 
 -- ##################################################################
 -- ## seed_contacts_2.sql
@@ -613,6 +711,7 @@ insert into public.contacts (company_id, first_name, last_name, job_title, senio
 select (select id from public.companies where lower(name)=lower('Sequoia Capital') limit 1), 'George','Robson','Partner','Partner','General Management','grobson@sequoiacap.com','https://www.linkedin.com/in/georgerobson','United Kingdom','London','694902507'
 where not exists (select 1 from public.contacts where lusha_contact_id='694902507');
 
+
 -- ##################################################################
 -- ## seed_contacts_3.sql
 -- ##################################################################
@@ -710,6 +809,7 @@ insert into public.contacts (company_id, first_name, last_name, job_title, senio
 select (select id from public.companies where lower(name)=lower('Simpson Thacher & Bartlett') limit 1), 'Adam','Gallagher','Partner','Partner','General Management','adam.gallagher@stblaw.com','https://www.linkedin.com/in/adam-gallagher-745186','United Kingdom',null,'415333065'
 where not exists (select 1 from public.contacts where lusha_contact_id='415333065');
 
+
 -- ##################################################################
 -- ## seed_funds.sql
 -- ##################################################################
@@ -774,6 +874,7 @@ from (values
 join public.companies c on lower(c.name) = lower(v.company)
 where not exists (select 1 from public.funds f where f.name = v.name);
 
+
 -- ##################################################################
 -- ## seed_commitments.sql
 -- ##################################################################
@@ -810,6 +911,7 @@ join public.funds fn on fn.name = v.fund_name
 where not exists (
   select 1 from public.commitments c where c.lp_company_id = lp.id and c.fund_id = fn.id
 );
+
 
 -- ##################################################################
 -- ## seed_service_relationships.sql

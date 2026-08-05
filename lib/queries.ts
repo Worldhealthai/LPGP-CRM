@@ -287,7 +287,7 @@ export async function getFundsForCompany(companyId: string): Promise<Fund[]> {
 }
 
 export async function getNotes(
-  entityType: "company" | "contact",
+  entityType: "company" | "contact" | "lead",
   entityId: string,
 ): Promise<Note[]> {
   const supabase = getReadClient();
