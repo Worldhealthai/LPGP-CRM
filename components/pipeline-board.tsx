@@ -105,11 +105,13 @@ export function PipelineBoard({
           <select className={selectCls} value={owner} onChange={(e) => setOwner(e.target.value)}>
             <option value="ALL">All owners</option>
             <option value="ME">My leads</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.full_name ?? "Unnamed"}
-              </option>
-            ))}
+            {profiles
+              .filter((p) => p.id !== currentUserId)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name ?? "Unnamed"}
+                </option>
+              ))}
           </select>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
