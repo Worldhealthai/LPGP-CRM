@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createSupabaseServerClient, authConfigured } from "./supabase/auth-server";
 
 export type Role = "admin" | "member";
@@ -19,8 +20,10 @@ function adminEmails(): string[] {
  * The signed-in user (with profile role), or null when signed out / not
  * configured. Admin is granted by profiles.role='admin' OR an email listed in
  * the ADMIN_EMAILS env var (handy for bootstrapping the first admin).
+ * Wrapped in React cache() so layout + page + actions share ONE auth
+ * round-trip per request instead of each paying it.
  */
-export async function getSessionUser(): Promise<SessionUser | null> {
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
   const {
@@ -44,4 +47,4 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (email && adminEmails().includes(email.toLowerCase())) role = "admin";
 
   return { id: user.id, email, name, role };
-}
+});

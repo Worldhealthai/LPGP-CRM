@@ -53,6 +53,21 @@ export async function listCompanies(opts: {
   return data as Company[];
 }
 
+export type CompanyLite = { id: string; name: string; category: Category };
+
+/** id/name/category only — for pickers and the New-lead dialog. Much lighter
+ *  than listCompanies() which pulls full firmographics. */
+export async function listCompaniesLite(): Promise<CompanyLite[]> {
+  const supabase = getReadClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("companies")
+    .select("id, name, category")
+    .order("name");
+  if (error || !data) return [];
+  return data as CompanyLite[];
+}
+
 export async function listPortfolioCompanies(): Promise<Company[]> {
   const supabase = getReadClient();
   if (!supabase) return [];
