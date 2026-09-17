@@ -3,6 +3,7 @@
  * priorities. Pure data so client components can import it freely.
  */
 
+import { opsMatchKey } from "./ops-types";
 import type { ActivityType, LeadWithRefs } from "./types";
 
 // --- Call dispositions ------------------------------------------------------
@@ -155,4 +156,21 @@ export function telHref(phone: string | null | undefined): string | null {
   if (!phone) return null;
   const cleaned = phone.replace(/[^\d+]/g, "");
   return cleaned.length >= 6 ? `tel:${cleaned}` : null;
+}
+
+// --- Who else is on this company -------------------------------------------
+
+/**
+ * Other leads for the same company, whoever owns them — the client-side twin
+ * of the server's heads-up, for screens that already hold every lead (the
+ * call workspace). Matched on the ops matcher's normalised key, so "Barings
+ * LLC" and "Barings" collide. Open pursuits sort first.
+ */
+export function teammatesFor(leads: LeadWithRefs[], lead: LeadWithRefs): LeadWithRefs[] {
+  const key = opsMatchKey(lead.company_name ?? "");
+  if (!key) return [];
+  const rank = (l: LeadWithRefs) => (isClosed(l) ? (l.stage === "Confirmed" ? 1 : 2) : 0);
+  return leads
+    .filter((l) => l.id !== lead.id && opsMatchKey(l.company_name ?? "") === key)
+    .sort((a, b) => rank(a) - rank(b) || b.updated_at.localeCompare(a.updated_at));
 }

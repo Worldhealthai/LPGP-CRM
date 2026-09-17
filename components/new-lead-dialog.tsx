@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Loader2, Sparkles } from "lucide-react";
 import { createLead } from "@/lib/crm-actions";
 import { linkOpsCompany } from "@/lib/ops-actions";
-import { OpsMatchPanel } from "@/components/ops/ops-match-panel";
-import type { OpsMatch } from "@/lib/ops-types";
+import { listKnownEvents, type KnownEvent } from "@/lib/pipeline-conflict-actions";
+import { OPS_SIGNED_CONFIDENCE } from "@/lib/ops-types";
 import { LEAD_STAGES, MARKETS, MARKET_LABELS } from "@/lib/pipeline";
+import type { LeadEvent, PipelineConflicts } from "@/lib/types";
+import { HeadsUpPanel } from "@/components/pipeline/heads-up-panel";
+import { EventPicker } from "@/components/pipeline/event-picker";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
@@ -26,6 +29,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Add a company to the pipeline.
+ *
+ * As the name is typed, the heads-up checks whether a teammate already has it
+ * (and for which events) or whether it's already signed per the ops panel.
+ * That check is informational: it fills nothing in and blocks nothing. The
+ * only thing it can do to the record is link it to the ops-panel deal, and
+ * only when the person leaves that box ticked.
+ */
 export function NewLeadDialog({
   companies,
   profiles,
@@ -51,9 +63,25 @@ export function NewLeadDialog({
   const [value, setValue] = useState("");
   const [nextStep, setNextStep] = useState("");
   const [ownerId, setOwnerId] = useState("");
-  // Set when someone accepts the "already in the ops panel" notice. The link
-  // itself can only be written once the lead has an id, so it waits for save.
-  const [opsLink, setOpsLink] = useState<OpsMatch | null>(null);
+  const [targetEvents, setTargetEvents] = useState<LeadEvent[]>([]);
+
+  // Events come from the ops panel; fetched once the dialog opens.
+  const [knownEvents, setKnownEvents] = useState<KnownEvent[] | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    listKnownEvents().then((rows) => {
+      if (live) setKnownEvents(rows);
+    });
+    return () => {
+      live = false;
+    };
+  }, [open]);
+
+  // The latest heads-up report, held for submit. linkOptIn null = the person
+  // hasn't overridden the default (link when the match is confident).
+  const [conflicts, setConflicts] = useState<PipelineConflicts | null>(null);
+  const [linkOptIn, setLinkOptIn] = useState<boolean | null>(null);
 
   const linkedCompany = companies.find(
     (c) => c.name.toLowerCase() === companyName.trim().toLowerCase(),
@@ -69,7 +97,9 @@ export function NewLeadDialog({
     setValue("");
     setNextStep("");
     setOwnerId("");
-    setOpsLink(null);
+    setTargetEvents([]);
+    setConflicts(null);
+    setLinkOptIn(null);
     setError(null);
   }
 
@@ -89,18 +119,22 @@ export function NewLeadDialog({
         stage,
         value_usd: value,
         next_step: nextStep,
+        target_events: targetEvents,
         owner_id: isAdmin ? ownerId : undefined,
       });
       if (!res.ok) {
         setError(res.error ?? "Could not create lead");
         return;
       }
-      // Only link if the field still holds the name that was accepted — if it
-      // was edited afterwards, the match no longer applies. Best-effort either
-      // way: a failed link shouldn't lose the lead that was just created.
-      if (opsLink && res.id && opsLink.company === companyName.trim()) {
-        await linkOpsCompany("lead", res.id, opsLink);
-      }
+      // Link only when the report is for the name actually saved, the match is
+      // confident (or the person ticked it anyway), and they didn't untick it.
+      const ops = conflicts?.ops ?? null;
+      const reportIsCurrent = conflicts?.company === companyName.trim();
+      const shouldLink =
+        Boolean(res.id && ops && reportIsCurrent) &&
+        (linkOptIn ?? Boolean(ops && ops.confidence >= OPS_SIGNED_CONFIDENCE));
+      if (shouldLink && res.id && ops) await linkOpsCompany("lead", res.id, ops);
+
       setOpen(false);
       reset();
       router.refresh();
@@ -154,20 +188,19 @@ export function NewLeadDialog({
                 </p>
               </div>
 
-              <OpsMatchPanel
-                companyName={companyName}
-                onPendingLink={setOpsLink}
-                onAdopt={(match) => {
-                  // Take the ops panel's spelling — it's what invoices carry.
-                  setCompanyName(match.company);
-                  const deal = match.deals[0];
-                  if (deal?.contact_name && !contactName) setContactName(deal.contact_name);
-                  // Only copy the figure across when the currencies agree;
-                  // dropping £4,000 into a USD field would quietly misreport.
-                  const usd = match.totals.find((t) => t.currency === "USD");
-                  if (usd && !value) setValue(String(Math.round(usd.contracted)));
-                }}
+              <div>
+                <Label className="mb-1.5">For which events?</Label>
+                <EventPicker events={knownEvents} value={targetEvents} onChange={setTargetEvents} />
+              </div>
+
+              <HeadsUpPanel
+                company={companyName}
+                events={targetEvents}
+                linkOptIn={linkOptIn}
+                onLinkOptIn={setLinkOptIn}
+                onResult={setConflicts}
               />
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="mb-1.5">Market</Label>
@@ -279,7 +312,9 @@ export function NewLeadDialog({
             </Button>
             <Button type="submit" disabled={pending}>
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Create lead
+              {conflicts?.hasConflict && conflicts.company === companyName.trim()
+                ? "Add anyway"
+                : "Create lead"}
             </Button>
           </ModalFooter>
         </form>

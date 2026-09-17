@@ -43,6 +43,11 @@ same thing split in numeric order. Both are idempotent.
 - **Event targets** (0009) — `event_targets`, keyed by the tracker's
   `portfolio_events.id`. The tracker owns what an event earned; it has no
   concept of what we aimed for or which programme series an event belongs to.
+- **Lead events** (0010) — `leads.target_events`, a JSON array of
+  `{ event_id, event_name }`. A sponsor is sold per event, so the heads-up that
+  stops two people approaching one firm has to be per event.
+- **Initials** (0011) — `profiles.initials`, unique case-insensitively. The
+  tracker stamps every deal with the signer's initials; this is the join.
 
 The app degrades gracefully when Supabase env vars are absent (shows a
 "connect Supabase" state instead of crashing).
@@ -63,6 +68,13 @@ Writes go through `lib/ops.ts` too, behind a **separate** `OPS_BRIDGE_WRITE_KEY`
 so a leaked read key can never create a financial record. The tracker's own
 `insertDealEvents` is passed into its bridge router, so there is one
 implementation of how a deal's money splits across events whoever wrote it.
+
+**The heads-up** (`lib/pipeline-conflicts.ts`) is the mechanism behind adding
+a company: who else has it (their leads, per event) and whether it's already
+signed (ops panel, with `signedBy` resolved via `lib/initials.ts`). It is
+informational by design — it never fills a field or blocks a save. An ops match
+is only ever called *signed* at or above `OPS_SIGNED_CONFIDENCE`; below that
+it's "possibly the same firm".
 
 **Fuzzy matching lives on the tracker** (`bridge.js`), so there is one scoring
 implementation. The CRM only ever does exact-key comparison (`opsMatchKey`), and

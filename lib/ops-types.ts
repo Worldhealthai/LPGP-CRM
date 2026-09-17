@@ -113,6 +113,8 @@ export type OpsSponsor = {
   package_label: string;
   paid: boolean;
   paid_inc_vat: number | null;
+  /** Initials of the salesperson who signed it, as typed in the tracker. */
+  initials: string;
 };
 
 export type OpsPing = {
@@ -134,6 +136,12 @@ export type OpsLeadSummary = {
   events: { event_id: number; event_name: string; allocated: number; currency: string }[];
   paid: boolean;
 };
+
+/**
+ * Minimum match confidence before the CRM will state a company has *signed*
+ * for an event. Below this it's shown as a possible match, never as fact.
+ */
+export const OPS_SIGNED_CONFIDENCE = 0.88;
 
 // --- Name normalisation -----------------------------------------------------
 // Mirrors the tiered matcher in TrackerLPGP's bridge.js. Used here only for

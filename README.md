@@ -10,9 +10,10 @@ invoices and how each sponsor's money is allocated across events. That panel
 stays the single source of truth for money; this CRM reads it, and can
 optionally record deals into it.
 
-> Add **Barings** to the pipeline and the form tells you it's already a deal in
-> the tracker — £4,000 across Berlin and CFO Miami, invoice paid — and links the
-> two records when you accept.
+> Add **Barings** to your pipeline and, before you've finished typing, the form
+> tells you John already has Barings for Miami (Discussing, touched 3 days ago)
+> and that Barings has already signed for Berlin — £2,000, Gold, paid, signed by
+> John Smith. Nothing is filled in and nothing is blocked; you just know.
 
 ## Features
 
@@ -26,6 +27,12 @@ optionally record deals into it.
   then high priority, then never-called, then the stalest lead — so working
   top-to-bottom is always the right order. `1`–`8` pick an outcome, `c` dials,
   `n`/`p` move, `⌘↵` saves.
+- **Heads-up on add** — every lead says which events it's for. Adding a company
+  checks, per event, whether a teammate is already on it or it has already signed
+  (per the ops panel, with the signer resolved from their initials), and says so
+  before you reach out. Informational only: it never edits the form. The same
+  check holds a one-click add from a company profile until you've seen it, and
+  the call workspace shows "also in the pipeline" before you dial.
 - **Pipeline board** — drag leads between stages, filter by market or owner.
 - **Accounts** — one record per sponsor won, with tabs for **points of contact**
   (full CRUD, one primary each), **events & money** (allocations straight from
@@ -60,12 +67,13 @@ pnpm dev                           # http://localhost:3000
 In the Supabase dashboard → **SQL Editor**, paste and run
 [`supabase/schema.sql`](supabase/schema.sql). That single file creates
 everything — the intelligence tables, the leads pipeline, the sales layer
-(accounts, points of contact, activities, tasks, ops links) and event targets.
-It's idempotent, so it's safe to re-run.
+(accounts, points of contact, activities, tasks, ops links), event targets, the
+events each lead is for, and per-user initials. It's idempotent, so it's safe
+to re-run.
 
 > Prefer step-by-step migrations? Run the files in
 > [`supabase/migrations/`](supabase/migrations) **in numeric order**
-> (`0001` → … → `0009`). Running a later one first fails with
+> (`0001` → … → `0011`). Running a later one first fails with
 > `relation "public.companies" does not exist` — that just means `0001`
 > hasn't run yet.
 
@@ -98,6 +106,9 @@ openssl rand -hex 32          # generate the shared secret
 3. Open **Settings** — it performs a live handshake and reports the deal, event
    and allocation counts it can see. A wrong key says so there rather than
    failing quietly later.
+4. In **Admin → Team**, set each person's initials to match what the tracker
+   stamps on their deals. That's what turns "signed by JS" into "signed by
+   John Smith", and what gets stamped on deals recorded from this side.
 
 The tracker exposes a `/api/bridge/*` surface guarded by that secret. Reads are
 all you need for the match notice, account allocations and Event performance.

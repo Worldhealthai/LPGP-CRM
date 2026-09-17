@@ -7,6 +7,7 @@ import { formatUsd } from "@/lib/utils";
 import { initials } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
 import { AssignSelect } from "@/components/admin-assign";
+import { InitialsField } from "@/components/admin-initials";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +39,7 @@ export default async function AdminPage() {
       <PageHeader
         eyebrow="Admin"
         title="Team & assignments"
-        description="Allocate leads to teammates. Reassigning here changes who owns and can edit a lead."
+        description="Allocate leads to teammates, and set each person's ops-panel initials so deals in the tracker resolve to a name here."
       />
 
       {/* Team */}
@@ -48,22 +49,27 @@ export default async function AdminPage() {
           {profiles.map((p) => (
             <li key={p.id} className="flex items-center gap-2.5 rounded-lg border px-3 py-2">
               <span className="grid h-8 w-8 place-items-center rounded-full bg-accent text-accent-foreground text-[11px] font-semibold">
-                {initials(p.full_name ?? p.email ?? "?")}
+                {p.initials || initials(p.full_name ?? p.email ?? "?")}
               </span>
               <div className="min-w-0">
                 <div className="text-sm font-medium truncate">{p.full_name ?? "Unnamed"}</div>
                 <div className="text-xs text-muted-foreground truncate">{p.email}</div>
               </div>
-              {p.role === "admin" ? (
-                <span className="ml-auto rounded border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                  ADMIN
-                </span>
-              ) : null}
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <InitialsField profileId={p.id} initials={p.initials} canEdit />
+                {p.role === "admin" ? (
+                  <span className="rounded border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    ADMIN
+                  </span>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>
         <p className="mt-3 text-xs text-muted-foreground">
-          Add teammates in Supabase → Authentication → Users. They appear here on first sign-in.
+          Add teammates in Supabase → Authentication → Users; they appear here on first sign-in.
+          The initials box is what the ops panel stamps on their deals — set it to match, and
+          &ldquo;signed by JS&rdquo; becomes &ldquo;signed by John Smith&rdquo; everywhere.
         </p>
       </section>
 

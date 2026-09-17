@@ -33,6 +33,7 @@ import {
   DISPOSITION_MAP,
   buildQueue,
   formatDuration,
+  teammatesFor,
   telHref,
   QUEUE_FILTERS,
   type QueueFilter,
@@ -41,6 +42,7 @@ import { LEAD_STAGES } from "@/lib/pipeline";
 import { formatOpsMoney, type OpsLeadSummary } from "@/lib/ops-types";
 import type { ActivityTimelineRow, LeadWithRefs } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { EventChips } from "@/components/pipeline/event-chips";
 import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { cn, initials, timeAgo } from "@/lib/utils";
@@ -97,7 +99,11 @@ export function CallWorkspace({ leads, currentUserId, opsByLead }: Props) {
         />
       ) : (
         <div className="grid flex-1 gap-4 p-4 md:p-6 lg:grid-cols-[1.15fr_1fr] xl:grid-cols-[1.25fr_1fr]">
-          <LeadPane lead={lead} ops={opsByLead[lead.id] ?? null} />
+          <LeadPane
+            lead={lead}
+            ops={opsByLead[lead.id] ?? null}
+            teammates={teammatesFor(leads, lead)}
+          />
           <CallPane
             key={lead.id}
             lead={lead}
@@ -216,7 +222,15 @@ function QueueEmpty({
 
 // ─── Left: who you're calling ───────────────────────────────────────────────
 
-function LeadPane({ lead, ops }: { lead: LeadWithRefs; ops: OpsLeadSummary | null }) {
+function LeadPane({
+  lead,
+  ops,
+  teammates,
+}: {
+  lead: LeadWithRefs;
+  ops: OpsLeadSummary | null;
+  teammates: LeadWithRefs[];
+}) {
   const tel = telHref(lead.contact_phone);
   // Pinned once per mount: reading the clock during render would make the
   // component non-idempotent, and a call-back doesn't come due mid-render.
@@ -260,6 +274,7 @@ function LeadPane({ lead, ops }: { lead: LeadWithRefs; ops: OpsLeadSummary | nul
                 {lead.stage}
               </Badge>
               {lead.market ? <span>{lead.market}</span> : null}
+              {lead.target_events?.length ? <EventChips events={lead.target_events} max={3} /> : null}
               <span>
                 {lead.call_count ?? 0} call{(lead.call_count ?? 0) === 1 ? "" : "s"}
               </span>
@@ -314,6 +329,7 @@ function LeadPane({ lead, ops }: { lead: LeadWithRefs; ops: OpsLeadSummary | nul
       </div>
 
       {ops ? <OpsStrip ops={ops} /> : null}
+      <TeammateStrip teammates={teammates} />
 
       {lead.next_step ? (
         <div className="rounded-2xl border bg-card p-4">
@@ -414,6 +430,40 @@ function OpsStrip({ ops }: { ops: OpsLeadSummary }) {
           ))}
         </ul>
       ) : null}
+    </div>
+  );
+}
+
+/** Other leads for this company — so nobody dials a firm a colleague is mid-deal with. */
+function TeammateStrip({ teammates }: { teammates: LeadWithRefs[] }) {
+  if (!teammates.length) return null;
+  return (
+    <div className="rounded-2xl border border-[var(--brand)]/30 bg-[var(--accent)]/40 p-4">
+      <p className="flex items-center gap-2 text-sm font-semibold">
+        <User className="h-4 w-4 text-[var(--brand)]" />
+        Also in the pipeline
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {teammates.map((t) => (
+          <li key={t.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+            <span className="font-medium">{t.owner?.full_name ?? "Unassigned"}</span>
+            <Badge variant="outline" className="text-[10px]">
+              {t.stage}
+            </Badge>
+            {t.target_events?.length ? (
+              <EventChips events={t.target_events} max={3} />
+            ) : (
+              <span className="text-xs text-muted-foreground">no event set</span>
+            )}
+            <Link href={`/leads/${t.id}`} className="ml-auto text-xs text-[var(--brand)] hover:underline">
+              Open
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        Check before pitching the same event twice.
+      </p>
     </div>
   );
 }

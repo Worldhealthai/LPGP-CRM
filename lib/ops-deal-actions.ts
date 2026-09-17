@@ -12,6 +12,7 @@ import {
   updateOpsDeal,
   type OpsDealInput,
 } from "./ops";
+import { loadProfileDirectory } from "./initials";
 import type { OpsDeal, OpsEvent } from "./ops-types";
 import type { OpsLinkEntity } from "./types";
 
@@ -64,7 +65,16 @@ export async function recordOpsDeal({
   }
   if (!input.company?.trim()) return { ok: false, error: "A company name is required." };
 
-  const created = await createOpsDeal(input);
+  // The tracker attributes every deal to a salesperson by initials. Stamp the
+  // recorder's unless the form set them explicitly, so "who signed this?" is
+  // answerable from either system.
+  const stamped: OpsDealInput = { ...input };
+  if (!stamped.initials?.trim()) {
+    const directory = await loadProfileDirectory(getAdminClient());
+    stamped.initials = directory.initialsFor(user.id) ?? "";
+  }
+
+  const created = await createOpsDeal(stamped);
   if (!created.ok) return { ok: false, error: created.error };
   const deal = created.data;
 

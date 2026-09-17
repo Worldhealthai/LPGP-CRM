@@ -5,7 +5,11 @@ import { getAdminClient } from "./supabase/admin";
 import { getSessionUser } from "./auth";
 import { SERIES } from "./events-catalogue";
 import { listOpsEventSponsors } from "./ops";
+import { loadProfileDirectory } from "./initials";
 import type { OpsSponsor } from "./ops-types";
+
+/** A sponsor row with the signer resolved from their initials. */
+export type EventSponsorRow = OpsSponsor & { signed_by: string | null };
 
 export type TargetResult = { ok: boolean; error?: string };
 
@@ -74,11 +78,18 @@ export async function saveEventTarget(input: {
  * Read-only, but exposed as an action so each event row can pull its sponsors
  * when expanded rather than loading every event's sponsor list up front.
  */
-export async function fetchEventSponsors(opsEventId: number): Promise<OpsSponsor[]> {
+export async function fetchEventSponsors(opsEventId: number): Promise<EventSponsorRow[]> {
   const user = await getSessionUser();
   if (!user) return [];
-  const res = await listOpsEventSponsors(Number(opsEventId));
-  return res.ok ? res.data : [];
+  const [res, directory] = await Promise.all([
+    listOpsEventSponsors(Number(opsEventId)),
+    loadProfileDirectory(),
+  ]);
+  if (!res.ok) return [];
+  return res.data.map((s) => ({
+    ...s,
+    signed_by: directory.nameForInitials(s.initials) ?? (s.initials ? s.initials.toUpperCase() : null),
+  }));
 }
 
 /**

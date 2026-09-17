@@ -1,4 +1,5 @@
 import type { LeadStage } from "./pipeline";
+import type { OpsMatch } from "./ops-types";
 
 export type Category = "LP" | "GP" | "SP";
 
@@ -133,6 +134,8 @@ export type Profile = {
   email: string | null;
   full_name: string | null;
   role: string;
+  /** Matches the initials stamped on deals in the ops panel. */
+  initials: string | null;
 };
 
 export type Lead = {
@@ -166,9 +169,14 @@ export type Lead = {
   account_id: string | null;
   ops_deal_id: number | null;
   ops_checked_at: string | null;
+  /** Events this lead is being pursued for (migration 0010). */
+  target_events: LeadEvent[];
   created_at: string;
   updated_at: string;
 };
+
+/** An event a lead targets — the tracker's id plus a name snapshot. */
+export type LeadEvent = { event_id: number; event_name: string };
 
 export type LeadOwner = { id: string; full_name: string | null; email: string | null };
 
@@ -293,6 +301,45 @@ export type OpsLink = {
   synced_at: string;
   linked_by: string | null;
   created_at: string;
+};
+
+// --- Pipeline heads-up -----------------------------------------------------
+// "Is anyone already on this company?" — answered before a lead is created.
+
+export type TeammateLead = {
+  leadId: string;
+  ownerId: string | null;
+  ownerName: string;
+  isMine: boolean;
+  stage: string;
+  stageKind: "open" | "won" | "lost";
+  events: LeadEvent[];
+  updatedAt: string;
+  lastActivityAt: string | null;
+};
+
+export type EventVerdict = {
+  event_id: number;
+  event_name: string;
+  /** signed = already sponsoring per the ops panel; pipeline = a teammate is on it. */
+  status: "clear" | "pipeline" | "signed";
+  detail: string;
+  leadId?: string;
+  /** Who signed it, resolved from the deal's initials when we can. */
+  signedBy?: string | null;
+};
+
+export type PipelineConflicts = {
+  company: string;
+  teammates: TeammateLead[];
+  /** Best ops-panel match, when the bridge returned one. */
+  ops: OpsMatch | null;
+  /** One verdict per event the person selected. */
+  verdicts: EventVerdict[];
+  /** Everyone who has signed this company, per the ops panel's initials. */
+  signedBy: string[];
+  /** True when something here should give the person pause. */
+  hasConflict: boolean;
 };
 
 export type LeadImport = {

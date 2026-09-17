@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Trash2 } from "lucide-react";
-import type { LeadWithRefs } from "@/lib/types";
+import type { LeadEvent, LeadWithRefs } from "@/lib/types";
+import { listKnownEvents, type KnownEvent } from "@/lib/pipeline-conflict-actions";
+import { EventPicker } from "@/components/pipeline/event-picker";
 import { LEAD_STAGES, MARKETS, MARKET_LABELS } from "@/lib/pipeline";
 import { updateLead, assignLead, deleteLead } from "@/lib/crm-actions";
 import { ConfirmModal } from "@/components/ui/modal";
@@ -48,6 +50,18 @@ export function LeadEditor({
     next_step_date: lead.next_step_date ?? "",
   });
   const [ownerId, setOwnerId] = useState(lead.owner_id ?? "");
+  const [targetEvents, setTargetEvents] = useState<LeadEvent[]>(lead.target_events ?? []);
+  const [knownEvents, setKnownEvents] = useState<KnownEvent[] | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    listKnownEvents().then((rows) => {
+      if (live) setKnownEvents(rows);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   function set<K extends keyof typeof f>(k: K, v: string) {
     setF((prev) => ({ ...prev, [k]: v }));
@@ -57,7 +71,7 @@ export function LeadEditor({
   function save() {
     setError(null);
     start(async () => {
-      const res = await updateLead(lead.id, f);
+      const res = await updateLead(lead.id, { ...f, target_events: targetEvents });
       if (!res.ok) {
         setError(res.error ?? "Could not save");
         return;
@@ -100,6 +114,18 @@ export function LeadEditor({
         <div className="sm:col-span-2">
           <Label className="mb-1.5">Company</Label>
           <input className={inputCls} value={f.company_name} onChange={(e) => set("company_name", e.target.value)} disabled={!canEdit} />
+        </div>
+        <div className="sm:col-span-2">
+          <Label className="mb-1.5">For which events?</Label>
+          <EventPicker
+            events={knownEvents}
+            value={targetEvents}
+            onChange={(next) => {
+              setTargetEvents(next);
+              setSaved(false);
+            }}
+            disabled={!canEdit}
+          />
         </div>
         <div>
           <Label className="mb-1.5">Stage</Label>

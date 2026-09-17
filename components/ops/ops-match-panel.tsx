@@ -1,147 +1,131 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  BadgeCheck,
-  CalendarDays,
-  ChevronRight,
-  Link2,
-  Loader2,
-  Radar,
-  Receipt,
-  X,
-} from "lucide-react";
+import { BadgeCheck, CalendarDays, Loader2, Radar, Receipt, X } from "lucide-react";
 import { lookupOpsCompany } from "@/lib/ops-actions";
-import {
-  describeOpsMatch,
-  formatOpsMoney,
-  type OpsMatch,
-} from "@/lib/ops-types";
+import { describeOpsMatch, formatOpsMoney, type OpsMatch } from "@/lib/ops-types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-/** Results always carry the query they answer, so a stale answer is simply
- *  ignored rather than needing an effect to clear it. */
+/** Results carry the query they answer, so a stale answer is simply ignored. */
 type Result = { query: string; matches: OpsMatch[] };
 
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 450;
 
 /**
- * Watches a company-name field and, when the name already exists as a deal in
- * the ops panel, surfaces it: how much was contracted, which events the money
- * was allocated to, and whether it's been paid.
+ * Tells someone creating a sponsor account that the company already exists as
+ * a deal in the ops panel — what was contracted, which events, whether paid,
+ * and who signed it.
  *
- * `onAdopt` is how the parent form pre-fills itself; `onPendingLink` tells the
- * parent which ops company to link once the record is actually saved. Both are
- * only ever called from a user action, never from an effect.
+ * Purely informational: it never edits the form. The one thing it offers is
+ * linking the account to the deal, which defaults on for an exact match and
+ * off otherwise; the parent owns that choice and reads the match via
+ * `onResult`, which fires from the fetch callback rather than an effect.
  */
 export function OpsMatchPanel({
   companyName,
-  onAdopt,
-  onPendingLink,
+  linkOptIn,
+  onLinkOptIn,
+  onResult,
   className,
 }: {
   companyName: string;
-  onAdopt?: (match: OpsMatch) => void;
-  onPendingLink?: (match: OpsMatch | null) => void;
+  /** null = follow the default (link when the match is exact). */
+  linkOptIn?: boolean | null;
+  onLinkOptIn?: (v: boolean) => void;
+  onResult?: (best: OpsMatch | null) => void;
   className?: string;
 }) {
   const [result, setResult] = useState<Result | null>(null);
-  const [checkingFor, setCheckingFor] = useState<string | null>(null);
   const [dismissedFor, setDismissedFor] = useState<string | null>(null);
-  const [adoptedFor, setAdoptedFor] = useState<string | null>(null);
   const [pickedCompany, setPickedCompany] = useState<string | null>(null);
-
   const query = companyName.trim();
-
-  // Guards against a slow lookup for an old name landing after a newer one.
   const requestSeq = useRef(0);
 
   useEffect(() => {
     if (query.length < MIN_QUERY) return;
-
     const seq = ++requestSeq.current;
     const timer = setTimeout(async () => {
-      setCheckingFor(query);
       const res = await lookupOpsCompany(query);
-      if (seq !== requestSeq.current) return; // superseded by a newer keystroke
-      setCheckingFor(null);
-      // "Not configured" is the normal state before the bridge is wired up, so
-      // a failure just means no notice — never an error on every keystroke.
-      setResult({ query, matches: res.ok ? res.data.matches ?? [] : [] });
+      if (seq !== requestSeq.current) return;
+      const matches = res.ok ? res.data.matches ?? [] : [];
+      setResult({ query, matches });
+      onResult?.(matches[0] ?? null);
     }, DEBOUNCE_MS);
-
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, onResult]);
 
-  // Everything below is derived from the current query — no reset effects.
   const matches = result?.query === query ? result.matches : [];
-  const checking = checkingFor === query || (query.length >= MIN_QUERY && result?.query !== query);
-  const dismissed = dismissedFor === query;
-  const adopted = adoptedFor === query;
-  const selected =
-    matches.find((m) => m.company === pickedCompany) ?? matches[0] ?? null;
+  const checking = query.length >= MIN_QUERY && result?.query !== query;
+  const selected = matches.find((m) => m.company === pickedCompany) ?? matches[0] ?? null;
 
-  if (query.length < MIN_QUERY || dismissed) return null;
-  if (!matches.length) return checking ? <CheckingRow className={className} /> : null;
-  if (!selected) return null;
+  if (query.length < MIN_QUERY || dismissedFor === query) return null;
+  if (!selected) {
+    return checking ? (
+      <p className={cn("inline-flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
+        <Loader2 className="h-3 w-3 animate-spin" /> Checking the ops panel…
+      </p>
+    ) : null;
+  }
 
   const others = matches.filter((m) => m.company !== selected.company);
+  const linkEffective = linkOptIn ?? selected.exact;
+  const signers = [
+    ...new Set(
+      selected.deals
+        .filter((d) => !d.cancelled && d.initials.trim())
+        .map((d) => d.initials.trim().toUpperCase()),
+    ),
+  ];
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-amber-500/40 bg-amber-500/[0.06]",
-        "dark:border-amber-400/30 dark:bg-amber-400/[0.07]",
+        "relative overflow-hidden rounded-xl border border-[var(--ops)]/40 bg-[var(--ops-soft)]/60",
         className,
       )}
     >
-      {/* Attention stripe */}
-      <span className="absolute inset-y-0 left-0 w-1 bg-amber-500 dark:bg-amber-400" />
-
+      <span className="absolute inset-y-0 left-0 w-1 bg-[var(--ops)]" aria-hidden />
       <div className="px-4 py-3.5 pl-5">
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300">
+          <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--ops)]/15 text-[var(--ops)]">
             <Radar className="h-4.5 w-4.5" />
           </span>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                Already in the ops panel
-              </p>
-              <Badge
-                variant="outline"
-                className="border-amber-500/40 bg-amber-500/10 text-[10px] text-amber-800 dark:text-amber-200"
-              >
+              <p className="text-sm font-semibold">Already in the ops panel</p>
+              <Badge variant="outline" className="border-[var(--ops)]/40 text-[10px]">
                 {selected.exact ? "Exact match" : `${Math.round(selected.confidence * 100)}% match`}
               </Badge>
               {selected.has_payment ? (
-                <Badge
-                  variant="outline"
-                  className="border-emerald-500/40 bg-emerald-500/10 text-[10px] text-emerald-700 dark:text-emerald-300"
-                >
+                <Badge className="border-transparent bg-[var(--success-soft)] text-[10px] text-[var(--success)]">
                   <BadgeCheck className="h-3 w-3" /> Paid
                 </Badge>
               ) : null}
             </div>
 
-            <p className="mt-1 text-[13px] leading-relaxed text-amber-900/85 dark:text-amber-100/80">
-              <span className="font-semibold">{selected.company}</span> is already tracked as{" "}
-              {selected.deal_count === 1 ? "a deal" : `${selected.deal_count} deals`} in the ops
-              panel — {describeOpsMatch(selected)}.
+            <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-foreground">{selected.company}</span> is tracked as{" "}
+              {selected.deal_count === 1 ? "a deal" : `${selected.deal_count} deals`} —{" "}
+              {describeOpsMatch(selected)}.
+              {signers.length ? (
+                <>
+                  {" "}
+                  Signed by <span className="font-medium text-foreground">{signers.join(", ")}</span>.
+                </>
+              ) : null}
             </p>
 
-            {/* Event allocations — the thing the notice exists to show */}
             {selected.events.length ? (
               <ul className="mt-2.5 flex flex-wrap gap-1.5">
                 {selected.events.map((ev) => (
                   <li
                     key={ev.event_id}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-card/70 px-2 py-1 text-[11px]"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--ops)]/30 bg-card/70 px-2 py-1 text-[11px]"
                   >
-                    <CalendarDays className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                    <CalendarDays className="h-3 w-3 text-[var(--ops)]" />
                     <span className="font-medium">{ev.event_name}</span>
                     <span className="tabular text-muted-foreground">
                       {formatOpsMoney(ev.allocated_amount, ev.currency)}
@@ -152,13 +136,8 @@ export function OpsMatchPanel({
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="mt-2 text-[12px] text-muted-foreground">
-                No event allocation recorded against it yet.
-              </p>
-            )}
+            ) : null}
 
-            {/* Invoice line */}
             {selected.deals[0]?.invoice_number ? (
               <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Receipt className="h-3 w-3" />
@@ -167,47 +146,32 @@ export function OpsMatchPanel({
               </p>
             ) : null}
 
-            {/* Actions */}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  onAdopt?.(selected);
-                  onPendingLink?.(selected);
-                  setAdoptedFor(selected.company.trim());
-                }}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
-                  adopted
-                    ? "bg-emerald-600 text-white"
-                    : "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-400 dark:text-amber-950",
-                )}
-              >
-                {adopted ? (
-                  <>
-                    <BadgeCheck className="h-3.5 w-3.5" /> Will link on save
-                  </>
-                ) : (
-                  <>
-                    <Link2 className="h-3.5 w-3.5" /> Use this deal
-                  </>
-                )}
-              </button>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              {onLinkOptIn ? (
+                <label className="flex cursor-pointer items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={linkEffective}
+                    onChange={(e) => onLinkOptIn(e.target.checked)}
+                    className="h-3.5 w-3.5 accent-[var(--primary)]"
+                  />
+                  Link this account to the ops-panel deal
+                </label>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {
                   setDismissedFor(query);
-                  onPendingLink?.(null);
+                  onLinkOptIn?.(false);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
               >
-                <X className="h-3.5 w-3.5" /> Different company
+                <X className="h-3 w-3" /> Not the same company
               </button>
             </div>
 
-            {/* Other candidates */}
             {others.length ? (
-              <div className="mt-3 border-t border-amber-500/20 pt-2.5">
+              <div className="mt-3 border-t border-[var(--ops)]/25 pt-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Other possible matches
                 </p>
@@ -218,12 +182,10 @@ export function OpsMatchPanel({
                         type="button"
                         onClick={() => {
                           setPickedCompany(m.company);
-                          setAdoptedFor(null);
-                          onPendingLink?.(null);
+                          onResult?.(m);
                         }}
-                        className="group flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[12px] transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                        className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[12px] hover:bg-black/5 dark:hover:bg-white/5"
                       >
-                        <ChevronRight className="h-3 w-3 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                         <span className="font-medium">{m.company}</span>
                         <span className="text-muted-foreground">
                           · {m.event_count} event{m.event_count === 1 ? "" : "s"}
@@ -241,19 +203,5 @@ export function OpsMatchPanel({
         </div>
       </div>
     </div>
-  );
-}
-
-function CheckingRow({ className }: { className?: string }) {
-  return (
-    <p
-      className={cn(
-        "inline-flex items-center gap-1.5 text-xs text-muted-foreground",
-        className,
-      )}
-    >
-      <Loader2 className="h-3 w-3 animate-spin" />
-      Checking the ops panel…
-    </p>
   );
 }

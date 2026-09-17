@@ -1213,3 +1213,29 @@ create trigger event_targets_set_updated_at
 alter table public.event_targets enable row level security;
 drop policy if exists "event_targets_read" on public.event_targets;
 create policy "event_targets_read" on public.event_targets for select using (true);
+
+
+-- ##################################################################
+-- ## Which event(s) a lead is being pursued for (0010)
+-- ##################################################################
+
+alter table public.leads
+  add column if not exists target_events jsonb not null default '[]'::jsonb;
+
+-- Lets "who else has this event in their pipeline?" use the index rather than
+-- scanning every lead's JSON.
+create index if not exists leads_target_events_idx
+  on public.leads using gin (target_events jsonb_path_ops);
+
+
+-- ##################################################################
+-- ## Link CRM users to the ops panel's deal initials (0011)
+-- ##################################################################
+
+alter table public.profiles
+  add column if not exists initials text;
+
+-- Two people can't share initials, or "who signed this?" has two answers.
+-- Case-insensitive, and NULLs are allowed (not everyone signs deals).
+create unique index if not exists profiles_initials_unique
+  on public.profiles (upper(initials)) where initials is not null;

@@ -13,9 +13,14 @@ import {
   Target,
   Users,
 } from "lucide-react";
-import { fetchEventSponsors, saveEventTarget, acceptInferredSeries } from "@/lib/event-target-actions";
+import {
+  fetchEventSponsors,
+  saveEventTarget,
+  acceptInferredSeries,
+  type EventSponsorRow,
+} from "@/lib/event-target-actions";
 import { SERIES, SERIES_COLOR, SERIES_MAP, type SeriesId } from "@/lib/events-catalogue";
-import { formatOpsMoney, type OpsSponsor } from "@/lib/ops-types";
+import { formatOpsMoney } from "@/lib/ops-types";
 import { EventBar } from "@/components/events/charts";
 import { RecordDealDialog } from "@/components/ops/record-deal-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -208,7 +213,7 @@ function EventRowItem({
   const [open, setOpen] = useState(false);
   // Tagged with the event it belongs to, so expanding shows a spinner without
   // an effect having to clear prior state.
-  const [loaded, setLoaded] = useState<{ id: number; rows: OpsSponsor[] } | null>(null);
+  const [loaded, setLoaded] = useState<{ id: number; rows: EventSponsorRow[] } | null>(null);
   const sponsors = loaded?.id === event.opsEventId ? loaded.rows : null;
 
   async function toggle() {
@@ -346,6 +351,7 @@ function EventRowItem({
                     <span className="block truncate text-[11px] text-muted-foreground">
                       {s.paid ? "Paid" : "Awaiting payment"}
                       {s.package_label ? ` · ${s.package_label}` : ""}
+                      {s.signed_by ? ` · signed by ${s.signed_by}` : ""}
                     </span>
                   </span>
                   <span className="tabular shrink-0 text-[13px] font-medium">

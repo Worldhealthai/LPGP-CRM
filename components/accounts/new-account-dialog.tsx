@@ -28,7 +28,10 @@ export function NewAccountDialog({ companies }: { companies: CompanyLite[] }) {
   const [status, setStatus] = useState<string>("Active");
   const [tier, setTier] = useState("");
   const [renewal, setRenewal] = useState("");
-  const [opsLink, setOpsLink] = useState<OpsMatch | null>(null);
+  // Best ops-panel match for the typed name, and whether to link to it.
+  // linkOptIn null = follow the default (link when the match is exact).
+  const [opsBest, setOpsBest] = useState<OpsMatch | null>(null);
+  const [linkOptIn, setLinkOptIn] = useState<boolean | null>(null);
 
   const linkedCompany = companies.find(
     (c) => c.name.toLowerCase() === name.trim().toLowerCase(),
@@ -40,7 +43,8 @@ export function NewAccountDialog({ companies }: { companies: CompanyLite[] }) {
     setStatus("Active");
     setTier("");
     setRenewal("");
-    setOpsLink(null);
+    setOpsBest(null);
+    setLinkOptIn(null);
     setError(null);
   }
 
@@ -49,6 +53,7 @@ export function NewAccountDialog({ companies }: { companies: CompanyLite[] }) {
     setError(null);
     setPending(true);
     try {
+      const shouldLink = Boolean(opsBest) && (linkOptIn ?? Boolean(opsBest?.exact));
       const res = await createAccount({
         name,
         company_id: linkedCompany?.id ?? null,
@@ -56,16 +61,15 @@ export function NewAccountDialog({ companies }: { companies: CompanyLite[] }) {
         status,
         tier,
         renewal_date: renewal,
-        ops_company: opsLink?.company ?? null,
+        ops_company: shouldLink && opsBest ? opsBest.company : null,
         first_sponsored_year: new Date().getFullYear(),
       });
       if (!res.ok) {
         setError(res.error ?? "Could not create account");
         return;
       }
-      // Only link when the field still holds the accepted name.
-      if (opsLink && res.id && opsLink.company === name.trim()) {
-        await linkOpsCompany("account", res.id, opsLink);
+      if (shouldLink && opsBest && res.id) {
+        await linkOpsCompany("account", res.id, opsBest);
       }
       setOpen(false);
       reset();
@@ -115,11 +119,9 @@ export function NewAccountDialog({ companies }: { companies: CompanyLite[] }) {
 
             <OpsMatchPanel
               companyName={name}
-              onPendingLink={setOpsLink}
-              onAdopt={(match) => {
-                setName(match.company);
-                if (!renewal && match.events[0]?.event_date) setRenewal(match.events[0].event_date);
-              }}
+              linkOptIn={linkOptIn}
+              onLinkOptIn={setLinkOptIn}
+              onResult={setOpsBest}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">

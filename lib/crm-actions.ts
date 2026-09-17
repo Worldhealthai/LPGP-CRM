@@ -5,8 +5,31 @@ import { getAdminClient } from "./supabase/admin";
 import { getSessionUser } from "./auth";
 import { isCategory } from "./categories";
 import { isLeadStage, marketFromCountry } from "./pipeline";
+import { checkPipelineConflicts } from "./pipeline-conflicts";
+import type { LeadEvent, PipelineConflicts } from "./types";
 
-export type LeadActionResult = { ok: boolean; id?: string; error?: string };
+export type LeadActionResult = {
+  ok: boolean;
+  id?: string;
+  error?: string;
+  /** Set when the add was held back for a heads-up; pass acknowledge to proceed. */
+  conflicts?: PipelineConflicts;
+};
+
+/** Sanitise a target_events payload down to { event_id, event_name } rows. */
+function cleanEvents(v: unknown): LeadEvent[] {
+  if (!Array.isArray(v)) return [];
+  const seen = new Set<number>();
+  const out: LeadEvent[] = [];
+  for (const raw of v) {
+    const id = Number((raw as { event_id?: unknown })?.event_id);
+    const name = clean((raw as { event_name?: unknown })?.event_name) ?? "";
+    if (!Number.isInteger(id) || seen.has(id)) continue;
+    seen.add(id);
+    out.push({ event_id: id, event_name: name });
+  }
+  return out;
+}
 
 const TEXT_FIELDS = new Set([
   "company_name",
@@ -42,6 +65,7 @@ function buildPatch(input: Record<string, unknown>) {
     const num = Number(raw);
     patch.value_usd = raw === "" || raw == null || Number.isNaN(num) ? null : num;
   }
+  if ("target_events" in input) patch.target_events = cleanEvents(input.target_events);
   return patch;
 }
 
@@ -76,7 +100,10 @@ export async function createLead(input: Record<string, unknown>): Promise<LeadAc
   return { ok: true, id: data.id };
 }
 
-export async function createLeadFromCompany(companyId: string): Promise<LeadActionResult> {
+export async function createLeadFromCompany(
+  companyId: string,
+  opts: { acknowledge?: boolean } = {},
+): Promise<LeadActionResult> {
   const { user, supabase } = await loadActor();
   if (!user) return { ok: false, error: "Not signed in" };
   if (!supabase) return { ok: false, error: "Supabase service role not configured" };
@@ -87,6 +114,13 @@ export async function createLeadFromCompany(companyId: string): Promise<LeadActi
     .eq("id", companyId)
     .single();
   if (!company) return { ok: false, error: "Company not found" };
+
+  // Same heads-up the new-lead form gives: a teammate already on it, or a
+  // signed sponsor. Held back once; the caller shows it and can proceed.
+  if (!opts.acknowledge) {
+    const conflicts = await checkPipelineConflicts({ company: company.name });
+    if (conflicts.hasConflict) return { ok: false, conflicts };
+  }
 
   // Avoid duplicates for the same owner + company.
   const { data: existing } = await supabase

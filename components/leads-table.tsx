@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import type { LeadWithRefs } from "@/lib/types";
 import { LEAD_STAGES, STAGE_META, MARKET_LABELS } from "@/lib/pipeline";
 import { NewLeadDialog } from "@/components/new-lead-dialog";
+import { EventChips } from "@/components/pipeline/event-chips";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Input } from "@/components/ui/input";
 import { formatUsd } from "@/lib/utils";
@@ -137,6 +138,11 @@ export function LeadsTable({
                       <Link href={`/leads/${l.id}`} className="font-medium hover:text-primary">
                         {l.company_name ?? l.company?.name ?? "Untitled"}
                       </Link>
+                      {l.target_events?.length ? (
+                        <div className="mt-1">
+                          <EventChips events={l.target_events} />
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                       {l.contact_name ?? "—"}

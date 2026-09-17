@@ -66,3 +66,8 @@ export function domainFromUrl(url: string | null | undefined): string | null {
     return null;
   }
 }
+
+/** "j.s." / "js" / "J S" → "JS". Letters only, uppercased, for matching. */
+export function normalizeInitials(value: string | null | undefined): string {
+  return (value ?? "").replace(/[^a-z]/gi, "").toUpperCase();
+}
