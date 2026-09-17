@@ -302,7 +302,7 @@ export async function getFundsForCompany(companyId: string): Promise<Fund[]> {
 }
 
 export async function getNotes(
-  entityType: "company" | "contact" | "lead",
+  entityType: "company" | "contact" | "lead" | "account",
   entityId: string,
 ): Promise<Note[]> {
   const supabase = getReadClient();

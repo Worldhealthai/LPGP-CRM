@@ -183,11 +183,12 @@ export async function setPortfolio(id: string, value: boolean): Promise<ActionRe
   return { ok: true };
 }
 
-type NoteEntity = "company" | "contact" | "lead";
+type NoteEntity = "company" | "contact" | "lead" | "account";
 
 function notePath(entityType: NoteEntity, entityId: string): string {
   if (entityType === "company") return `/companies/${entityId}`;
   if (entityType === "contact") return `/contacts/${entityId}`;
+  if (entityType === "account") return `/accounts/${entityId}`;
   return `/leads/${entityId}`;
 }
 

@@ -9,6 +9,10 @@ import { formatUsd } from "@/lib/utils";
 import { CategoryBadge } from "@/components/category-badge";
 import { LeadEditor } from "@/components/lead-editor";
 import { NotesPanel } from "@/components/notes-panel";
+import { ConvertLeadButton } from "@/components/accounts/convert-lead-button";
+import { OpsAllocations } from "@/components/accounts/ops-allocations";
+import { dealsFromLinks, listOpsLinks } from "@/lib/ops-links";
+import { opsPanelUrl } from "@/lib/ops";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +21,12 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const [lead, user] = await Promise.all([getLead(id), getSessionUser()]);
   if (!lead) notFound();
-  const [notes, profiles] = await Promise.all([getNotes("lead", id), listProfiles()]);
+  const [notes, profiles, opsLinks] = await Promise.all([
+    getNotes("lead", id),
+    listProfiles(),
+    listOpsLinks("lead", id),
+  ]);
+  const opsDeals = dealsFromLinks(opsLinks);
 
   const isAdmin = user?.role === "admin";
   const canEdit = Boolean(isAdmin || (user && lead.owner_id === user.id));
@@ -71,6 +80,9 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
             <div className="text-sm text-muted-foreground mt-0.5">
               Owner: <span className="text-foreground">{lead.owner?.full_name ?? "Unassigned"}</span>
             </div>
+            <div className="mt-3 flex justify-end">
+              <ConvertLeadButton leadId={id} accountId={lead.account_id} />
+            </div>
           </div>
         </div>
         {lead.contact_name ? (
@@ -93,6 +105,16 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
           </div>
         ) : null}
       </div>
+
+      {opsDeals.length ? (
+        <section className="rounded-2xl border bg-card p-5 shadow-sm">
+          <h2 className="mb-1 font-semibold">In the ops panel</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            This company already has signed business in the tracker.
+          </p>
+          <OpsAllocations deals={opsDeals} links={opsLinks} opsPanelUrl={opsPanelUrl()} />
+        </section>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="lg:col-span-2 rounded-2xl border bg-card p-5 shadow-sm">

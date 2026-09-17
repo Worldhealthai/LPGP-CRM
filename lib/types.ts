@@ -116,7 +116,7 @@ export type ClientLink = {
 
 export type Note = {
   id: string;
-  entity_type: "company" | "contact" | "lead";
+  entity_type: "company" | "contact" | "lead" | "account";
   entity_id: string;
   body: string;
   author: string | null;

@@ -13,7 +13,7 @@ export function NotesPanel({
   entityId,
   notes,
 }: {
-  entityType: "company" | "contact" | "lead";
+  entityType: "company" | "contact" | "lead" | "account";
   entityId: string;
   notes: Note[];
 }) {
