@@ -244,6 +244,18 @@ export type Activity = {
   created_at: string;
 };
 
+/** Compact activity row for the call console's history strip. */
+export type ActivityTimelineRow = {
+  id: string;
+  type: ActivityType;
+  outcome: string | null;
+  subject: string | null;
+  body: string | null;
+  duration_seconds: number | null;
+  occurred_at: string;
+  owner_name: string | null;
+};
+
 export type ActivityWithRefs = Activity & {
   owner: LeadOwner | null;
   lead_name: string | null;

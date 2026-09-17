@@ -117,6 +117,13 @@ export type OpsResult<T> =
   | { ok: true; data: T }
   | { ok: false; reason: OpsFailure; error: string };
 
+/** Condensed ops context for a CRM record — what a list row or call card shows. */
+export type OpsLeadSummary = {
+  company: string;
+  events: { event_id: number; event_name: string; allocated: number; currency: string }[];
+  paid: boolean;
+};
+
 // --- Presentation -----------------------------------------------------------
 
 const CURRENCY_SYMBOLS: Record<string, string> = {

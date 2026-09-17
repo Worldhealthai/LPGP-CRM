@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getAdminClient } from "./supabase/admin";
 import { getSessionUser } from "./auth";
 import { isLeadStage } from "./pipeline";
-import type { ActivityType } from "./types";
+import type { ActivityTimelineRow, ActivityType } from "./types";
 
 export type ActivityResult = { ok: boolean; id?: string; error?: string };
 
@@ -116,6 +116,43 @@ export async function logActivity(input: LogCallInput): Promise<ActivityResult> 
   }
   revalidatePath("/");
   return { ok: true, id: activity.id };
+}
+
+/**
+ * A lead's recent touches. Read-only, but exposed as an action so the call
+ * console can pull history for whichever lead it lands on without shipping
+ * every lead's timeline in the initial payload.
+ */
+export async function getLeadTimeline(leadId: string): Promise<ActivityTimelineRow[]> {
+  const user = await getSessionUser();
+  if (!user) return [];
+  const supabase = getAdminClient();
+  if (!supabase) return [];
+
+  const { data } = await supabase
+    .from("activities")
+    .select("id, type, outcome, subject, body, duration_seconds, occurred_at, owner_id")
+    .eq("lead_id", leadId)
+    .order("occurred_at", { ascending: false })
+    .limit(25);
+  if (!data?.length) return [];
+
+  const ownerIds = [...new Set(data.map((r) => r.owner_id).filter(Boolean))] as string[];
+  const { data: profiles } = ownerIds.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", ownerIds)
+    : { data: [] as { id: string; full_name: string | null }[] };
+  const names = new Map((profiles ?? []).map((p) => [p.id as string, p.full_name as string | null]));
+
+  return data.map((r) => ({
+    id: r.id as string,
+    type: r.type as ActivityType,
+    outcome: (r.outcome as string | null) ?? null,
+    subject: (r.subject as string | null) ?? null,
+    body: (r.body as string | null) ?? null,
+    duration_seconds: (r.duration_seconds as number | null) ?? null,
+    occurred_at: r.occurred_at as string,
+    owner_name: r.owner_id ? names.get(r.owner_id as string) ?? null : null,
+  }));
 }
 
 export async function deleteActivity(id: string): Promise<ActivityResult> {

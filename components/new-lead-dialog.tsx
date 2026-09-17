@@ -95,8 +95,10 @@ export function NewLeadDialog({
         setError(res.error ?? "Could not create lead");
         return;
       }
-      // Best-effort: a failed link shouldn't lose the lead that was just created.
-      if (opsLink && res.id) {
+      // Only link if the field still holds the name that was accepted — if it
+      // was edited afterwards, the match no longer applies. Best-effort either
+      // way: a failed link shouldn't lose the lead that was just created.
+      if (opsLink && res.id && opsLink.company === companyName.trim()) {
         await linkOpsCompany("lead", res.id, opsLink);
       }
       setOpen(false);

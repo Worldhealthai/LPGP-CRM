@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BadgeCheck,
   CalendarDays,
@@ -20,7 +20,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type Status = "idle" | "checking" | "none" | "found" | "error";
+/** Results always carry the query they answer, so a stale answer is simply
+ *  ignored rather than needing an effect to clear it. */
+type Result = { query: string; matches: OpsMatch[] };
 
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 450;
@@ -31,7 +33,8 @@ const DEBOUNCE_MS = 450;
  * was allocated to, and whether it's been paid.
  *
  * `onAdopt` is how the parent form pre-fills itself; `onPendingLink` tells the
- * parent which ops company to link once the record is actually saved.
+ * parent which ops company to link once the record is actually saved. Both are
+ * only ever called from a user action, never from an effect.
  */
 export function OpsMatchPanel({
   companyName,
@@ -44,62 +47,44 @@ export function OpsMatchPanel({
   onPendingLink?: (match: OpsMatch | null) => void;
   className?: string;
 }) {
-  const [status, setStatus] = useState<Status>("idle");
-  const [matches, setMatches] = useState<OpsMatch[]>([]);
-  const [selected, setSelected] = useState<OpsMatch | null>(null);
-  const [dismissed, setDismissed] = useState(false);
-  const [adopted, setAdopted] = useState(false);
+  const [result, setResult] = useState<Result | null>(null);
+  const [checkingFor, setCheckingFor] = useState<string | null>(null);
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null);
+  const [adoptedFor, setAdoptedFor] = useState<string | null>(null);
+  const [pickedCompany, setPickedCompany] = useState<string | null>(null);
 
-  // Guards against a slow lookup for an old name overwriting a newer one.
-  const requestSeq = useRef(0);
   const query = companyName.trim();
 
-  const notifyLink = useCallback(
-    (match: OpsMatch | null) => onPendingLink?.(match),
-    [onPendingLink],
-  );
+  // Guards against a slow lookup for an old name landing after a newer one.
+  const requestSeq = useRef(0);
 
   useEffect(() => {
-    if (query.length < MIN_QUERY) {
-      setStatus("idle");
-      setMatches([]);
-      setSelected(null);
-      setAdopted(false);
-      notifyLink(null);
-      return;
-    }
-
-    // A fresh name means the previous verdict no longer applies.
-    setDismissed(false);
-    setAdopted(false);
-    notifyLink(null);
+    if (query.length < MIN_QUERY) return;
 
     const seq = ++requestSeq.current;
     const timer = setTimeout(async () => {
-      setStatus("checking");
+      setCheckingFor(query);
       const res = await lookupOpsCompany(query);
-      if (seq !== requestSeq.current) return; // superseded
-
-      if (!res.ok) {
-        // Not configured is the normal state before the bridge is wired up —
-        // stay silent rather than nagging on every keystroke.
-        setStatus(res.configured ? "error" : "idle");
-        setMatches([]);
-        return;
-      }
-      const found = res.data.matches ?? [];
-      setMatches(found);
-      setSelected(found[0] ?? null);
-      setStatus(found.length ? "found" : "none");
+      if (seq !== requestSeq.current) return; // superseded by a newer keystroke
+      setCheckingFor(null);
+      // "Not configured" is the normal state before the bridge is wired up, so
+      // a failure just means no notice — never an error on every keystroke.
+      setResult({ query, matches: res.ok ? res.data.matches ?? [] : [] });
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [query, notifyLink]);
+  }, [query]);
 
-  if (dismissed || status === "idle" || status === "none" || status === "error") {
-    return status === "checking" ? <CheckingRow className={className} /> : null;
-  }
-  if (status === "checking") return <CheckingRow className={className} />;
+  // Everything below is derived from the current query — no reset effects.
+  const matches = result?.query === query ? result.matches : [];
+  const checking = checkingFor === query || (query.length >= MIN_QUERY && result?.query !== query);
+  const dismissed = dismissedFor === query;
+  const adopted = adoptedFor === query;
+  const selected =
+    matches.find((m) => m.company === pickedCompany) ?? matches[0] ?? null;
+
+  if (query.length < MIN_QUERY || dismissed) return null;
+  if (!matches.length) return checking ? <CheckingRow className={className} /> : null;
   if (!selected) return null;
 
   const others = matches.filter((m) => m.company !== selected.company);
@@ -188,8 +173,8 @@ export function OpsMatchPanel({
                 type="button"
                 onClick={() => {
                   onAdopt?.(selected);
-                  notifyLink(selected);
-                  setAdopted(true);
+                  onPendingLink?.(selected);
+                  setAdoptedFor(selected.company.trim());
                 }}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors",
@@ -211,8 +196,8 @@ export function OpsMatchPanel({
               <button
                 type="button"
                 onClick={() => {
-                  setDismissed(true);
-                  notifyLink(null);
+                  setDismissedFor(query);
+                  onPendingLink?.(null);
                 }}
                 className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5"
               >
@@ -232,9 +217,9 @@ export function OpsMatchPanel({
                       <button
                         type="button"
                         onClick={() => {
-                          setSelected(m);
-                          setAdopted(false);
-                          notifyLink(null);
+                          setPickedCompany(m.company);
+                          setAdoptedFor(null);
+                          onPendingLink?.(null);
                         }}
                         className="group flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[12px] transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                       >

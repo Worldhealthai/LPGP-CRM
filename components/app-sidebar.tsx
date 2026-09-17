@@ -18,6 +18,8 @@ import {
   Database,
   Menu,
   X,
+  PhoneCall,
+  Handshake,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -30,6 +32,8 @@ type NavItem = { href: string; label: string; icon: typeof LayoutGrid };
 const CRM_NAV: NavItem[] = [
   { href: "/", label: "Pipeline", icon: LayoutGrid },
   { href: "/leads", label: "Leads", icon: List },
+  { href: "/leads/workspace", label: "Call workspace", icon: PhoneCall },
+  { href: "/accounts", label: "Accounts", icon: Handshake },
 ];
 
 const DB_NAV: NavItem[] = [
@@ -74,9 +78,18 @@ function setDbOpen(open: boolean) {
   window.dispatchEvent(new Event("nav-db-toggle"));
 }
 
+const ALL_NAV_HREFS = [...CRM_NAV, ...DB_NAV].map((n) => n.href);
+
+/**
+ * The most specific matching nav entry wins, so /leads/workspace lights up
+ * "Call workspace" rather than both it and "Leads".
+ */
 function isActive(pathname: string, href: string) {
   if (href === "/" || href === "/database") return pathname === href;
-  return pathname.startsWith(href);
+  if (!pathname.startsWith(href)) return false;
+  return !ALL_NAV_HREFS.some(
+    (other) => other !== href && other.startsWith(href) && pathname.startsWith(other),
+  );
 }
 
 function Brand({ onClick }: { onClick?: () => void }) {
