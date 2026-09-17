@@ -2,97 +2,93 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import {
-  LayoutGrid,
-  List,
-  LayoutDashboard,
   Building2,
+  CalendarRange,
+  Command,
+  FileSpreadsheet,
+  Gauge,
+  Handshake,
+  Kanban,
   Layers,
-  Users,
-  Star,
-  Upload,
+  LayoutDashboard,
+  List,
+  Menu,
+  PhoneCall,
+  Receipt,
   Settings,
   Shield,
-  ChevronDown,
-  Database,
-  Menu,
+  Star,
+  Upload,
+  Users,
   X,
 } from "lucide-react";
+import { LpgpMark } from "@/components/lpgp-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
-import { initials } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { openCommandPalette } from "@/components/command-palette";
+import { cn, initials } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 
-type NavItem = { href: string; label: string; icon: typeof LayoutGrid };
+type NavItem = { href: string; label: string; icon: typeof Kanban };
+type NavGroup = { label: string; items: NavItem[] };
 
-const CRM_NAV: NavItem[] = [
-  { href: "/", label: "Pipeline", icon: LayoutGrid },
+const SELL: NavItem[] = [
+  { href: "/", label: "Command centre", icon: Gauge },
+  { href: "/pipeline", label: "Pipeline", icon: Kanban },
   { href: "/leads", label: "Leads", icon: List },
+  { href: "/leads/workspace", label: "Call workspace", icon: PhoneCall },
+  { href: "/accounts", label: "Accounts", icon: Handshake },
+  { href: "/deals", label: "My deals", icon: Receipt },
+  { href: "/events", label: "Event performance", icon: CalendarRange },
+  { href: "/import/leads", label: "Import leads", icon: FileSpreadsheet },
 ];
 
-const DB_NAV: NavItem[] = [
+const DATA: NavItem[] = [
   { href: "/database", label: "Overview", icon: LayoutDashboard },
   { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/funds", label: "Funds", icon: Layers },
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/portfolio", label: "Portfolio", icon: Star },
-  { href: "/import", label: "Import", icon: Upload },
+  { href: "/import", label: "Import contacts", icon: Upload },
 ];
 
-const DB_PATHS = ["/database", "/companies", "/funds", "/contacts", "/portfolio", "/import"];
-const DB_OPEN_KEY = "nav-db-open";
+const GROUPS: NavGroup[] = [
+  { label: "Sell", items: SELL },
+  { label: "Database", items: DATA },
+];
 
-// Collapse state lives in localStorage, read via useSyncExternalStore so the
-// server render (default: open) hydrates cleanly and updates without effects.
-function subscribeDbOpen(cb: () => void): () => void {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener("storage", cb);
-  window.addEventListener("nav-db-toggle", cb);
-  return () => {
-    window.removeEventListener("storage", cb);
-    window.removeEventListener("nav-db-toggle", cb);
-  };
-}
-function getDbOpenSnapshot(): boolean {
-  try {
-    return localStorage.getItem(DB_OPEN_KEY) !== "0";
-  } catch {
-    return true;
-  }
-}
-function getDbOpenServerSnapshot(): boolean {
-  return true;
-}
-function setDbOpen(open: boolean) {
-  try {
-    localStorage.setItem(DB_OPEN_KEY, open ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
-  window.dispatchEvent(new Event("nav-db-toggle"));
-}
+const ALL_HREFS = GROUPS.flatMap((g) => g.items).map((i) => i.href);
 
+/**
+ * The most specific matching entry wins, so /leads/workspace lights up "Call
+ * workspace" rather than both it and "Leads", and /import/leads doesn't also
+ * light "Import contacts".
+ */
 function isActive(pathname: string, href: string) {
-  if (href === "/" || href === "/database") return pathname === href;
-  return pathname.startsWith(href);
+  if (href === "/" || href === "/database" || href === "/import") return pathname === href;
+  if (!pathname.startsWith(href)) return false;
+  return !ALL_HREFS.some(
+    (other) => other !== href && other.startsWith(href) && pathname.startsWith(other),
+  );
 }
 
 function Brand({ onClick }: { onClick?: () => void }) {
   return (
-    <Link href="/" onClick={onClick} className="flex items-center gap-2.5 px-2 group">
-      <span className="grid place-items-center h-7 w-7 rounded-md bg-primary text-primary-foreground text-[12px] font-bold tracking-tight shadow-sm transition-transform group-hover:scale-105">
-        LP
-      </span>
-      <span className="text-[15px] font-semibold tracking-tight">
-        LPGP <span className="text-muted-foreground font-normal">Connect</span>
+    <Link href="/" onClick={onClick} className="group flex items-center gap-2.5 px-1">
+      <LpgpMark className="h-8 w-8 shrink-0 text-white transition-transform group-hover:scale-105" />
+      <span className="leading-none">
+        <span className="block text-[15px] font-bold tracking-tight text-white">LPGP Connect</span>
+        <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--rail-fg-dim)]">
+          Sales CRM
+        </span>
       </span>
     </Link>
   );
 }
 
-function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+function RailLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
   const pathname = usePathname();
   const Icon = item.icon;
   const on = isActive(pathname, item.href);
@@ -100,81 +96,65 @@ function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void 
     <Link
       href={item.href}
       onClick={onNavigate}
+      aria-current={on ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+        "relative flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] font-medium transition-colors",
         on
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-foreground/70 hover:bg-accent hover:text-foreground",
+          ? "bg-[var(--rail-hover)] text-white"
+          : "text-[var(--rail-fg)] hover:bg-[var(--rail-hover)] hover:text-white",
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      {/* Active marker rides the left edge rather than filling the row, so the
+          rail stays calm with six items in a group. */}
+      <span
+        className={cn(
+          "absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full transition-all",
+          on ? "brand-gradient opacity-100" : "opacity-0",
+        )}
+      />
+      <Icon className={cn("h-4 w-4 shrink-0", on ? "text-[var(--brand-2)]" : "opacity-80")} />
       {item.label}
     </Link>
   );
 }
 
-function NavBody({ user, onNavigate }: { user: SessionUser | null; onNavigate?: () => void }) {
-  const pathname = usePathname();
-  const onDbRoute = DB_PATHS.some((p) => pathname.startsWith(p));
-  const dbOpen = useSyncExternalStore(subscribeDbOpen, getDbOpenSnapshot, getDbOpenServerSnapshot);
-
-  function toggleDb() {
-    setDbOpen(!dbOpen);
-  }
-
+function CommandTrigger({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-      <div className="space-y-0.5">
-        <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          CRM
-        </p>
-        {CRM_NAV.map((item) => (
-          <NavLink key={item.href} item={item} onNavigate={onNavigate} />
-        ))}
-      </div>
+    <button
+      type="button"
+      onClick={() => {
+        onNavigate?.();
+        openCommandPalette();
+      }}
+      className="flex w-full items-center gap-2 rounded-lg border border-[var(--rail-line)] bg-black/25 px-2.5 py-2 text-[13px] text-[var(--rail-fg-dim)] transition-colors hover:border-[var(--brand)]/50 hover:text-white"
+    >
+      <Command className="h-3.5 w-3.5" />
+      <span className="flex-1 text-left">Search or jump…</span>
+      <kbd className="rounded border border-[var(--rail-line)] px-1 text-[10px] tabular">⌘K</kbd>
+    </button>
+  );
+}
 
-      <div className="space-y-0.5">
-        <button
-          type="button"
-          onClick={toggleDb}
-          aria-expanded={dbOpen}
-          className={cn(
-            "w-full flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors",
-            "text-muted-foreground hover:text-foreground hover:bg-accent/60",
-          )}
-        >
-          <Database className="h-3.5 w-3.5" />
-          Database
-          {!dbOpen && onDbRoute ? (
-            <span className="h-1.5 w-1.5 rounded-full bg-foreground/70" title="You're in a Database page" />
-          ) : null}
-          <ChevronDown
-            className={cn(
-              "ml-auto h-3.5 w-3.5 transition-transform duration-200",
-              dbOpen ? "" : "-rotate-90",
-            )}
-          />
-        </button>
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
-            dbOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-          )}
-        >
-          <div className="overflow-hidden space-y-0.5">
-            {DB_NAV.map((item) => (
-              <NavLink key={item.href} item={item} onNavigate={onNavigate} />
-            ))}
-          </div>
+function NavBody({ user, onNavigate }: { user: SessionUser | null; onNavigate?: () => void }) {
+  return (
+    <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+      {GROUPS.map((group) => (
+        <div key={group.label} className="space-y-0.5">
+          <p className="px-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--rail-fg-dim)]">
+            {group.label}
+          </p>
+          {group.items.map((item) => (
+            <RailLink key={item.href} item={item} onNavigate={onNavigate} />
+          ))}
         </div>
-      </div>
+      ))}
 
       {user?.role === "admin" ? (
         <div className="space-y-0.5">
-          <p className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="px-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--rail-fg-dim)]">
             Admin
           </p>
-          <NavLink
+          <RailLink
             item={{ href: "/admin", label: "Team & assignments", icon: Shield }}
             onNavigate={onNavigate}
           />
@@ -184,37 +164,39 @@ function NavBody({ user, onNavigate }: { user: SessionUser | null; onNavigate?: 
   );
 }
 
-function Footer({ user, onNavigate }: { user: SessionUser | null; onNavigate?: () => void }) {
+function RailFooter({ user, onNavigate }: { user: SessionUser | null; onNavigate?: () => void }) {
   const pathname = usePathname();
   const settingsOn = pathname.startsWith("/settings");
   return (
-    <div className="border-t p-3 space-y-2">
+    <div className="rail-line space-y-2 border-t p-3">
       <Link
         href="/settings"
         onClick={onNavigate}
         className={cn(
-          "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+          "flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] font-medium transition-colors",
           settingsOn
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-foreground/70 hover:bg-accent hover:text-foreground",
+            ? "bg-[var(--rail-hover)] text-white"
+            : "text-[var(--rail-fg)] hover:bg-[var(--rail-hover)] hover:text-white",
         )}
       >
-        <Settings className="h-4 w-4" />
+        <Settings className="h-4 w-4 opacity-80" />
         Settings
       </Link>
-      <ThemeToggle />
+
+      <ThemeToggle variant="rail" />
+
       {user ? (
-        <div className="flex items-center gap-2.5 rounded-lg border bg-card/70 px-2.5 py-2">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-accent text-accent-foreground text-[11px] font-semibold shrink-0">
+        <div className="rail-line flex items-center gap-2.5 rounded-lg border bg-black/25 px-2.5 py-2">
+          <span className="brand-gradient grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white">
             {initials(user.name)}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium truncate">{user.name}</div>
-            <div className="text-[11px] text-muted-foreground truncate">
+            <div className="truncate text-[13px] font-medium text-white">{user.name}</div>
+            <div className="truncate text-[10px] text-[var(--rail-fg-dim)]">
               {user.role === "admin" ? "Admin" : "Member"}
             </div>
           </div>
-          <SignOutButton />
+          <SignOutButton variant="rail" />
         </div>
       ) : null}
     </div>
@@ -223,12 +205,15 @@ function Footer({ user, onNavigate }: { user: SessionUser | null; onNavigate?: (
 
 export function AppSidebar({ user }: { user: SessionUser | null }) {
   return (
-    <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-card/80 backdrop-blur-sm h-screen sticky top-0">
-      <div className="h-16 flex items-center border-b px-3">
+    <aside className="rail sticky top-0 hidden h-screen w-[15.5rem] shrink-0 flex-col md:flex">
+      <div className="rail-line flex h-16 items-center border-b px-3">
         <Brand />
       </div>
+      <div className="px-3 pt-3">
+        <CommandTrigger />
+      </div>
       <NavBody user={user} />
-      <Footer user={user} />
+      <RailFooter user={user} />
     </aside>
   );
 }
@@ -238,30 +223,47 @@ export function MobileTopBar({ user }: { user: SessionUser | null }) {
   const close = () => setOpen(false);
   return (
     <>
-      <div className="md:hidden sticky top-0 z-40 flex h-14 items-center justify-between border-b bg-card/90 backdrop-blur px-3">
+      <div className="rail sticky top-0 z-40 flex h-14 items-center justify-between px-3 md:hidden">
         <Brand />
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="p-2 -mr-1 text-foreground"
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={openCommandPalette}
+            className="p-2 text-[var(--rail-fg)]"
+            aria-label="Search"
+          >
+            <Command className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="-mr-1 p-2 text-[var(--rail-fg)]"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {open ? (
-        <div className="md:hidden fixed inset-0 z-50">
-          <button className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" aria-label="Close menu" onClick={close} />
-          <div className="absolute left-0 top-0 h-full w-72 max-w-[85%] bg-card border-r flex flex-col shadow-2xl">
-            <div className="h-14 flex items-center justify-between border-b px-3">
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+            aria-label="Close menu"
+            onClick={close}
+          />
+          <div className="rail absolute left-0 top-0 flex h-full w-72 max-w-[85%] flex-col shadow-2xl">
+            <div className="rail-line flex h-14 items-center justify-between border-b px-3">
               <Brand onClick={close} />
-              <button onClick={close} className="p-2 text-foreground" aria-label="Close menu">
+              <button onClick={close} className="p-2 text-[var(--rail-fg)]" aria-label="Close menu">
                 <X className="h-5 w-5" />
               </button>
             </div>
+            <div className="px-3 pt-3">
+              <CommandTrigger onNavigate={close} />
+            </div>
             <NavBody user={user} onNavigate={close} />
-            <Footer user={user} onNavigate={close} />
+            <RailFooter user={user} onNavigate={close} />
           </div>
         </div>
       ) : null}

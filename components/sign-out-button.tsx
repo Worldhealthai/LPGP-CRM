@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogOut, Loader2 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-export function SignOutButton() {
+export function SignOutButton({ variant = "default" }: { variant?: "default" | "rail" } = {}) {
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -22,7 +22,11 @@ export function SignOutButton() {
     <button
       onClick={signOut}
       disabled={pending}
-      className="text-muted-foreground hover:text-foreground transition-colors"
+      className={
+        variant === "rail"
+          ? "text-[var(--rail-fg-dim)] transition-colors hover:text-white"
+          : "text-muted-foreground transition-colors hover:text-foreground"
+      }
       aria-label="Sign out"
       title="Sign out"
     >

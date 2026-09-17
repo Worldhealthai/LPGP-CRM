@@ -6,7 +6,7 @@ export async function listProfiles(): Promise<Profile[]> {
   if (!supabase) return [];
   const { data } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role")
+    .select("id, email, full_name, role, initials")
     .order("full_name");
   return (data as Profile[]) ?? [];
 }

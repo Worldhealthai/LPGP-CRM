@@ -1,4 +1,5 @@
 import type { LeadStage } from "./pipeline";
+import type { OpsMatch } from "./ops-types";
 
 export type Category = "LP" | "GP" | "SP";
 
@@ -116,7 +117,7 @@ export type ClientLink = {
 
 export type Note = {
   id: string;
-  entity_type: "company" | "contact" | "lead";
+  entity_type: "company" | "contact" | "lead" | "account";
   entity_id: string;
   body: string;
   author: string | null;
@@ -133,6 +134,8 @@ export type Profile = {
   email: string | null;
   full_name: string | null;
   role: string;
+  /** Matches the initials stamped on deals in the ops panel. */
+  initials: string | null;
 };
 
 export type Lead = {
@@ -152,13 +155,201 @@ export type Lead = {
   source: string | null;
   next_step: string | null;
   next_step_date: string | null;
+  // Sales workflow (migration 0008)
+  title: string | null;
+  disposition: string | null;
+  callback_at: string | null;
+  last_activity_at: string | null;
+  call_count: number;
+  do_not_call: boolean;
+  priority: string;
+  website: string | null;
+  country: string | null;
+  import_id: string | null;
+  account_id: string | null;
+  ops_deal_id: number | null;
+  ops_checked_at: string | null;
+  /** Events this lead is being pursued for (migration 0010). */
+  target_events: LeadEvent[];
   created_at: string;
   updated_at: string;
 };
+
+/** An event a lead targets — the tracker's id plus a name snapshot. */
+export type LeadEvent = { event_id: number; event_name: string };
 
 export type LeadOwner = { id: string; full_name: string | null; email: string | null };
 
 export type LeadWithRefs = Lead & {
   owner: LeadOwner | null;
   company: { id: string; name: string; category: Category; domain: string | null } | null;
+};
+
+// --- Accounts (sponsors) ---------------------------------------------------
+export type Account = {
+  id: string;
+  company_id: string | null;
+  name: string;
+  category: Category | null;
+  owner_id: string | null;
+  status: string;
+  tier: string | null;
+  health: string | null;
+  domain: string | null;
+  website: string | null;
+  linkedin_url: string | null;
+  hq_location: string | null;
+  country: string | null;
+  ops_company: string | null;
+  first_sponsored_year: number | null;
+  renewal_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AccountContact = {
+  id: string;
+  account_id: string;
+  contact_id: string | null;
+  full_name: string;
+  job_title: string | null;
+  email: string | null;
+  phone: string | null;
+  mobile: string | null;
+  linkedin_url: string | null;
+  role: string | null;
+  is_primary: boolean;
+  last_contacted: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AccountWithRefs = Account & {
+  owner: LeadOwner | null;
+  contact_count: number;
+  primary_contact: AccountContact | null;
+};
+
+// --- Activity log ----------------------------------------------------------
+export type ActivityType = "call" | "email" | "meeting" | "linkedin" | "note" | "task";
+
+export type Activity = {
+  id: string;
+  type: ActivityType;
+  outcome: string | null;
+  subject: string | null;
+  body: string | null;
+  duration_seconds: number | null;
+  occurred_at: string;
+  owner_id: string | null;
+  lead_id: string | null;
+  account_id: string | null;
+  company_id: string | null;
+  contact_id: string | null;
+  account_contact_id: string | null;
+  created_at: string;
+};
+
+/** Compact activity row for the call console's history strip. */
+export type ActivityTimelineRow = {
+  id: string;
+  type: ActivityType;
+  outcome: string | null;
+  subject: string | null;
+  body: string | null;
+  duration_seconds: number | null;
+  occurred_at: string;
+  owner_name: string | null;
+};
+
+export type ActivityWithRefs = Activity & {
+  owner: LeadOwner | null;
+  lead_name: string | null;
+  account_name: string | null;
+};
+
+// --- Tasks -----------------------------------------------------------------
+export type Task = {
+  id: string;
+  title: string;
+  notes: string | null;
+  due_date: string | null;
+  priority: string;
+  done: boolean;
+  done_at: string | null;
+  owner_id: string | null;
+  lead_id: string | null;
+  account_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// --- Ops panel link --------------------------------------------------------
+/** `user` = a salesperson claiming an ops deal as one of "my deals". */
+export type OpsLinkEntity = "lead" | "account" | "company" | "user";
+
+export type OpsLink = {
+  id: string;
+  entity_type: OpsLinkEntity;
+  entity_id: string;
+  ops_deal_id: number;
+  ops_company: string | null;
+  confidence: number | null;
+  /** Last payload the bridge returned — keeps the UI useful when it's down. */
+  snapshot: Record<string, unknown>;
+  synced_at: string;
+  linked_by: string | null;
+  created_at: string;
+};
+
+// --- Pipeline heads-up -----------------------------------------------------
+// "Is anyone already on this company?" — answered before a lead is created.
+
+export type TeammateLead = {
+  leadId: string;
+  ownerId: string | null;
+  ownerName: string;
+  isMine: boolean;
+  stage: string;
+  stageKind: "open" | "won" | "lost";
+  events: LeadEvent[];
+  updatedAt: string;
+  lastActivityAt: string | null;
+};
+
+export type EventVerdict = {
+  event_id: number;
+  event_name: string;
+  /** signed = already sponsoring per the ops panel; pipeline = a teammate is on it. */
+  status: "clear" | "pipeline" | "signed";
+  detail: string;
+  leadId?: string;
+  /** Who signed it, resolved from the deal's initials when we can. */
+  signedBy?: string | null;
+};
+
+export type PipelineConflicts = {
+  company: string;
+  teammates: TeammateLead[];
+  /** Best ops-panel match, when the bridge returned one. */
+  ops: OpsMatch | null;
+  /** One verdict per event the person selected. */
+  verdicts: EventVerdict[];
+  /** Everyone who has signed this company, per the ops panel's initials. */
+  signedBy: string[];
+  /** True when something here should give the person pause. */
+  hasConflict: boolean;
+};
+
+export type LeadImport = {
+  id: string;
+  filename: string | null;
+  row_count: number;
+  created_count: number;
+  skipped_count: number;
+  mapping: Record<string, string>;
+  owner_id: string | null;
+  created_at: string;
 };

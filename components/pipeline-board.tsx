@@ -7,6 +7,7 @@ import type { LeadWithRefs } from "@/lib/types";
 import { LEAD_STAGES, STAGE_META, MARKET_LABELS } from "@/lib/pipeline";
 import { moveLeadStage } from "@/lib/crm-actions";
 import { NewLeadDialog } from "@/components/new-lead-dialog";
+import { EventChips } from "@/components/pipeline/event-chips";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Input } from "@/components/ui/input";
 import { formatUsd } from "@/lib/utils";
@@ -194,6 +195,11 @@ export function PipelineBoard({
                           <p className="mt-0.5 text-xs text-muted-foreground truncate">
                             {[l.contact_name, l.contact_title].filter(Boolean).join(" · ")}
                           </p>
+                        ) : null}
+                        {l.target_events?.length ? (
+                          <div className="mt-1.5">
+                            <EventChips events={l.target_events} />
+                          </div>
                         ) : null}
                         <div className="mt-2.5 flex items-center justify-between">
                           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -1,0 +1,224 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Building2,
+  CalendarClock,
+  CircleDot,
+  Globe,
+  Handshake,
+  MapPin,
+  Radar,
+  Users,
+} from "lucide-react";
+import { getAccount, listAccountContacts } from "@/lib/accounts";
+import { listActivitiesFor } from "@/lib/activities";
+import { dealsFromLinks, listOpsLinks } from "@/lib/ops-links";
+import { opsPanelUrl } from "@/lib/ops";
+import { getNotes } from "@/lib/queries";
+import { ACTIVITY_LABELS, formatDuration } from "@/lib/sales";
+import { PointsOfContact } from "@/components/accounts/points-of-contact";
+import { OpsAllocations } from "@/components/accounts/ops-allocations";
+import {
+  OpsLinkSearch,
+  OpsSyncButton,
+  OpsUnlinkButton,
+} from "@/components/accounts/ops-link-controls";
+import { NotesPanel } from "@/components/notes-panel";
+import { RecordDealDialog } from "@/components/ops/record-deal-dialog";
+import { isOpsWriteEnabled } from "@/lib/ops";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/empty-state";
+import { cn, initials, timeAgo } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
+
+const STATUS_STYLE: Record<string, string> = {
+  Active: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+  "Renewal due": "bg-amber-500/12 text-amber-700 dark:text-amber-300",
+  Prospect: "bg-sky-500/12 text-sky-700 dark:text-sky-300",
+  Churned: "bg-destructive/12 text-destructive",
+};
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const account = await getAccount(id);
+  return { title: account ? `${account.name} — LPGP Connect` : "Account — LPGP Connect" };
+}
+
+export default async function AccountPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const account = await getAccount(id);
+  if (!account) notFound();
+
+  const [contacts, links, activities, notes] = await Promise.all([
+    listAccountContacts(id),
+    listOpsLinks("account", id),
+    listActivitiesFor("account_id", id, 60),
+    getNotes("account", id),
+  ]);
+
+  const deals = dealsFromLinks(links);
+  const linked = deals.length > 0;
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 md:px-6">
+      <Link
+        href="/accounts"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> Accounts
+      </Link>
+
+      {/* Hero */}
+      <header className="rounded-2xl border bg-card p-5 md:p-6">
+        <div className="flex flex-wrap items-start gap-4">
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-xl font-bold text-primary">
+            {initials(account.name)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{account.name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Badge className={cn("border-transparent", STATUS_STYLE[account.status] ?? "")}>
+                {account.status}
+              </Badge>
+              {account.category ? <Badge variant="outline">{account.category}</Badge> : null}
+              {account.tier ? <Badge variant="secondary">{account.tier}</Badge> : null}
+              {account.health ? <Badge variant="outline">{account.health}</Badge> : null}
+              {linked ? (
+                <Badge className="border-transparent bg-amber-500/12 text-amber-700 dark:text-amber-300">
+                  <Radar className="h-3 w-3" /> In ops panel
+                </Badge>
+              ) : null}
+            </div>
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              {account.owner?.full_name ? <span>Owned by {account.owner.full_name}</span> : null}
+              {account.hq_location ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" /> {account.hq_location}
+                </span>
+              ) : null}
+              {account.website ? (
+                <a
+                  href={account.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-foreground"
+                >
+                  <Globe className="h-3.5 w-3.5" /> Website
+                </a>
+              ) : null}
+              {account.company_id ? (
+                <Link
+                  href={`/companies/${account.company_id}`}
+                  className="inline-flex items-center gap-1.5 hover:text-foreground"
+                >
+                  <Building2 className="h-3.5 w-3.5" /> Database profile
+                </Link>
+              ) : null}
+              {account.renewal_date ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarClock className="h-3.5 w-3.5" /> Renews {account.renewal_date}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {isOpsWriteEnabled() ? (
+              <RecordDealDialog
+                defaultCompany={account.ops_company ?? account.name}
+                link={{ entityType: "account", entityId: id }}
+              />
+            ) : null}
+            {linked ? (
+              <OpsUnlinkButton accountId={id} />
+            ) : (
+              <OpsLinkSearch accountId={id} accountName={account.name} />
+            )}
+          </div>
+        </div>
+      </header>
+
+      <Tabs defaultValue="contacts" className="gap-4">
+        <TabsList className="w-full max-w-2xl">
+          <TabsTrigger value="contacts">
+            <Users className="h-4 w-4" /> Points of contact
+            {contacts.length ? (
+              <span className="ml-1 rounded bg-foreground/10 px-1 text-[10px] tabular">
+                {contacts.length}
+              </span>
+            ) : null}
+          </TabsTrigger>
+          <TabsTrigger value="events">
+            <Handshake className="h-4 w-4" /> Events &amp; money
+          </TabsTrigger>
+          <TabsTrigger value="activity">
+            <CircleDot className="h-4 w-4" /> Activity
+          </TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="contacts">
+          <PointsOfContact accountId={id} accountName={account.name} contacts={contacts} />
+        </TabsContent>
+
+        <TabsContent value="events">
+          <OpsAllocations
+            deals={deals}
+            links={links}
+            opsPanelUrl={opsPanelUrl()}
+            syncButton={linked ? <OpsSyncButton accountId={id} /> : null}
+          />
+        </TabsContent>
+
+        <TabsContent value="activity">
+          {activities.length === 0 ? (
+            <EmptyState
+              title="Nothing logged yet"
+              description="Calls and emails sent from the points-of-contact tab land here, along with anything logged against this sponsor."
+            />
+          ) : (
+            <ul className="space-y-2.5">
+              {activities.map((a) => (
+                <li key={a.id} className="flex gap-3 rounded-xl border bg-card p-3.5">
+                  <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                    <CircleDot className="h-3.5 w-3.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      <span className="font-medium">{ACTIVITY_LABELS[a.type]}</span>
+                      {a.outcome ? (
+                        <span className="text-muted-foreground"> · {a.outcome}</span>
+                      ) : null}
+                      {a.duration_seconds ? (
+                        <span className="tabular text-muted-foreground">
+                          {" "}
+                          · {formatDuration(a.duration_seconds)}
+                        </span>
+                      ) : null}
+                    </p>
+                    {a.subject ? <p className="mt-0.5 text-sm">{a.subject}</p> : null}
+                    {a.body ? (
+                      <p className="mt-0.5 whitespace-pre-wrap text-sm text-muted-foreground">
+                        {a.body}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {timeAgo(a.occurred_at)}
+                      {a.owner?.full_name ? ` · ${a.owner.full_name}` : ""}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </TabsContent>
+
+        <TabsContent value="notes">
+          <NotesPanel entityType="account" entityId={id} notes={notes} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
