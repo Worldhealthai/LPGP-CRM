@@ -2,7 +2,7 @@ import { Check, X, Database, Plug, KeyRound, Radar, TriangleAlert } from "lucide
 import { isSupabaseConfigured } from "@/lib/supabase/server";
 import { isAdminConfigured } from "@/lib/supabase/admin";
 import { lushaConfigured } from "@/lib/lusha";
-import { isOpsConfigured, opsPanelUrl, pingOps } from "@/lib/ops";
+import { isOpsConfigured, isOpsWriteEnabled, opsPanelUrl, pingOps } from "@/lib/ops";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata = { title: "Settings — LPGP Connect" };
@@ -118,6 +118,16 @@ export default async function SettingsPage() {
             }
             ok={Boolean(ops?.ok)}
             icon={<Radar className="h-4 w-4" />}
+          />
+          <StatusRow
+            label="Recording deals"
+            hint={
+              isOpsWriteEnabled()
+                ? "This CRM can create deals and attach invoices in the tracker"
+                : "OPS_BRIDGE_WRITE_KEY — a separate secret, so a leaked read key can never write"
+            }
+            ok={isOpsWriteEnabled()}
+            icon={<KeyRound className="h-4 w-4" />}
           />
         </div>
 

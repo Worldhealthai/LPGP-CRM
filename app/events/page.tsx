@@ -1,5 +1,6 @@
 import { BadgeCheck, CalendarRange, Radar, Target, Users } from "lucide-react";
 import { getEventPerformance } from "@/lib/event-performance";
+import { isOpsWriteEnabled } from "@/lib/ops";
 import { formatOpsMoney } from "@/lib/ops-types";
 import { SERIES } from "@/lib/events-catalogue";
 import { EventTable } from "@/components/events/event-table";
@@ -132,6 +133,7 @@ export default async function EventPerformancePage() {
               seriesInferred: e.seriesInferred,
             }))}
             currency={REPORTING_CURRENCY}
+            canRecordDeals={isOpsWriteEnabled()}
           />
         </>
       )}

@@ -17,6 +17,7 @@ import { fetchEventSponsors, saveEventTarget, acceptInferredSeries } from "@/lib
 import { SERIES, SERIES_COLOR, SERIES_MAP, type SeriesId } from "@/lib/events-catalogue";
 import { formatOpsMoney, type OpsSponsor } from "@/lib/ops-types";
 import { EventBar } from "@/components/events/charts";
+import { RecordDealDialog } from "@/components/ops/record-deal-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,15 @@ export type EventRow = {
   seriesInferred: boolean;
 };
 
-export function EventTable({ events, currency }: { events: EventRow[]; currency: string }) {
+export function EventTable({
+  events,
+  currency,
+  canRecordDeals,
+}: {
+  events: EventRow[];
+  currency: string;
+  canRecordDeals: boolean;
+}) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [seriesFilter, setSeriesFilter] = useState("");
@@ -135,6 +144,7 @@ export function EventTable({ events, currency }: { events: EventRow[]; currency:
             event={e}
             scale={scale}
             currency={currency}
+            canRecordDeals={canRecordDeals}
             onEdit={() => setEditing(e)}
           />
         ))}
@@ -186,11 +196,13 @@ function EventRowItem({
   event,
   scale,
   currency,
+  canRecordDeals,
   onEdit,
 }: {
   event: EventRow;
   scale: number;
   currency: string;
+  canRecordDeals: boolean;
   onEdit: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -301,7 +313,12 @@ function EventRowItem({
 
       {open ? (
         <div className="border-t bg-muted/30 px-4 py-3">
-          <p className="eyebrow mb-2">Sponsoring this event</p>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="eyebrow">Sponsoring this event</p>
+            {canRecordDeals ? (
+              <RecordDealDialog trigger="inline" presetEventId={event.opsEventId} />
+            ) : null}
+          </div>
           {sponsors === null ? (
             <p className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> Loading from the ops panel…

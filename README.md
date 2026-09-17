@@ -6,8 +6,9 @@ managers & VCs) and **SPs** (solution providers) — each with a roster of senio
 contacts.
 
 It runs alongside the **ops panel** (`TrackerLPGP`), which holds signed deals,
-invoices and how each sponsor's money is allocated across events. This CRM reads
-that panel and never writes to it.
+invoices and how each sponsor's money is allocated across events. That panel
+stays the single source of truth for money; this CRM reads it, and can
+optionally record deals into it.
 
 > Add **Barings** to the pipeline and the form tells you it's already a deal in
 > the tracker — £4,000 across Berlin and CFO Miami, invoice paid — and links the
@@ -33,6 +34,9 @@ that panel and never writes to it.
 - **Spreadsheet import** — drop in an `.xlsx`/`.csv`, confirm the auto-matched
   columns, and import. Duplicates are filtered against the pipeline *and* within
   the file, and any company already sponsoring an event is flagged and linked.
+- **Event performance** — every event in the ops panel against a target you set
+  here, with per-portfolio roll-ups across the seven programme series, and an
+  expandable list of who is sponsoring each event and who has paid.
 - **⌘K palette** — jump to any page or search leads, sponsors, firms and people.
 
 ### Intelligence database
@@ -55,13 +59,13 @@ pnpm dev                           # http://localhost:3000
 
 In the Supabase dashboard → **SQL Editor**, paste and run
 [`supabase/schema.sql`](supabase/schema.sql). That single file creates
-everything — the intelligence tables, the leads pipeline, and the sales layer
-(accounts, points of contact, activities, tasks, ops links). It's idempotent, so
-it's safe to re-run.
+everything — the intelligence tables, the leads pipeline, the sales layer
+(accounts, points of contact, activities, tasks, ops links) and event targets.
+It's idempotent, so it's safe to re-run.
 
 > Prefer step-by-step migrations? Run the files in
 > [`supabase/migrations/`](supabase/migrations) **in numeric order**
-> (`0001` → … → `0008`). Running a later one first fails with
+> (`0001` → … → `0009`). Running a later one first fails with
 > `relation "public.companies" does not exist` — that just means `0001`
 > hasn't run yet.
 
@@ -75,7 +79,8 @@ it's safe to re-run.
 | `LUSHA_API_KEY` | Lusha dashboard → API | In-app lead import — **secret** |
 | `ADMIN_EMAILS` | _optional_ | Comma-separated super admins |
 | `OPS_PANEL_URL` | _optional_ | The tracker's origin, no trailing slash |
-| `OPS_BRIDGE_KEY` | _optional_ | Shared secret, **identical on both apps** — **secret** |
+| `OPS_BRIDGE_KEY` | _optional_ | Read secret, **identical on both apps** — **secret** |
+| `OPS_BRIDGE_WRITE_KEY` | _optional_ | Write secret — a **different** value, also on both apps |
 
 Add the same variables in **Vercel → Project → Settings → Environment Variables**.
 
@@ -94,8 +99,16 @@ openssl rand -hex 32          # generate the shared secret
    and allocation counts it can see. A wrong key says so there rather than
    failing quietly later.
 
-The tracker exposes a read-only `/api/bridge/*` surface guarded by that secret.
-Nothing in this CRM ever writes to it.
+The tracker exposes a `/api/bridge/*` surface guarded by that secret. Reads are
+all you need for the match notice, account allocations and Event performance.
+
+**Recording deals from the CRM** is optional and off by default. Set a *second*,
+different secret as `OPS_BRIDGE_WRITE_KEY` on both apps and a "Record deal"
+action appears on accounts and events: it writes the deal, its per-event
+allocation and the invoice file straight into the tracker. The tracker stays
+the single source of truth for money — the CRM becomes a second front-end onto
+it, not a second copy of it. Keeping the keys separate means a leaked read key
+can never create a financial record.
 
 ### 4. Deploy
 

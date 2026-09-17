@@ -25,6 +25,8 @@ import {
   OpsUnlinkButton,
 } from "@/components/accounts/ops-link-controls";
 import { NotesPanel } from "@/components/notes-panel";
+import { RecordDealDialog } from "@/components/ops/record-deal-dialog";
+import { isOpsWriteEnabled } from "@/lib/ops";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/empty-state";
@@ -123,6 +125,12 @@ export default async function AccountPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
+            {isOpsWriteEnabled() ? (
+              <RecordDealDialog
+                defaultCompany={account.ops_company ?? account.name}
+                link={{ entityType: "account", entityId: id }}
+              />
+            ) : null}
             {linked ? (
               <OpsUnlinkButton accountId={id} />
             ) : (
