@@ -20,6 +20,7 @@ import {
   X,
   PhoneCall,
   Handshake,
+  FileSpreadsheet,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -34,6 +35,7 @@ const CRM_NAV: NavItem[] = [
   { href: "/leads", label: "Leads", icon: List },
   { href: "/leads/workspace", label: "Call workspace", icon: PhoneCall },
   { href: "/accounts", label: "Accounts", icon: Handshake },
+  { href: "/import/leads", label: "Import leads", icon: FileSpreadsheet },
 ];
 
 const DB_NAV: NavItem[] = [

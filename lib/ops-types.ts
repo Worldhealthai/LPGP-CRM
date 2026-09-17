@@ -73,6 +73,17 @@ export type OpsCompany = {
 
 export type OpsMatch = OpsCompany & { confidence: number; exact: boolean };
 
+/**
+ * The /companies?slim=1 payload: the event rollup without the full deal
+ * bodies. Enough to reconcile a bulk import, small enough to fetch in one go.
+ */
+export type OpsCompanySlim = Omit<OpsCompany, "deals" | "cancelled_count" | "events"> & {
+  events: Pick<
+    OpsCompanyEvent,
+    "event_id" | "event_name" | "event_date" | "allocated_amount" | "currency" | "deal_ids"
+  >[];
+};
+
 export type OpsMatchResponse = {
   query: string;
   normalized: string;
@@ -123,6 +134,35 @@ export type OpsLeadSummary = {
   events: { event_id: number; event_name: string; allocated: number; currency: string }[];
   paid: boolean;
 };
+
+// --- Name normalisation -----------------------------------------------------
+// Mirrors the tiered matcher in TrackerLPGP's bridge.js. Used here only for
+// EXACT key comparison during bulk imports — scoring stays server-side in the
+// bridge so there is one source of truth for fuzzy matching.
+
+const LEGAL_SUFFIXES = new Set([
+  "ltd", "limited", "llc", "llp", "lp", "inc", "incorporated", "corp",
+  "corporation", "co", "plc", "gmbh", "ag", "sa", "sas", "nv", "bv", "ab",
+  "as", "oy", "spa", "srl", "pte", "pty", "kk", "kg", "mbh", "sarl", "aps",
+]);
+
+export function normalizeCompanyName(raw: string): string {
+  return raw
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+/** Normalised name with trailing legal-entity words removed ("Barings LLC" → "barings"). */
+export function opsMatchKey(raw: string): string {
+  const tokens = normalizeCompanyName(raw).split(" ").filter(Boolean);
+  while (tokens.length > 1 && LEGAL_SUFFIXES.has(tokens[tokens.length - 1])) tokens.pop();
+  return tokens.join(" ");
+}
 
 // --- Presentation -----------------------------------------------------------
 

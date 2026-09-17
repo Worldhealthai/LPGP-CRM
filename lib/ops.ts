@@ -1,7 +1,7 @@
 import "server-only";
 
 import type {
-  OpsCompany,
+  OpsCompanySlim,
   OpsDeal,
   OpsEvent,
   OpsMatchResponse,
@@ -39,6 +39,7 @@ export type {
   OpsCurrencyTotal,
   OpsCompanyEvent,
   OpsCompany,
+  OpsCompanySlim,
   OpsMatch,
   OpsMatchResponse,
   OpsEvent,
@@ -158,7 +159,7 @@ export async function pingOps(): Promise<OpsResult<OpsPing>> {
   return opsFetch<OpsPing>("/api/bridge/ping", 0);
 }
 
-/** Slim company index — used for the "already in the ops panel" typeahead. */
-export async function listOpsCompanies(): Promise<OpsResult<OpsCompany[]>> {
-  return opsFetch<OpsCompany[]>("/api/bridge/companies?slim=1", 300);
+/** Slim company index — one fetch that answers "who is already a sponsor?". */
+export async function listOpsCompanies(): Promise<OpsResult<OpsCompanySlim[]>> {
+  return opsFetch<OpsCompanySlim[]>("/api/bridge/companies?slim=1", 300);
 }
