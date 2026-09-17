@@ -17,6 +17,9 @@ import {
   recordOpsDeal,
   type EventOption,
 } from "@/lib/ops-deal-actions";
+import { checkForExistingDeal, claimOpsDeal } from "@/lib/my-deal-actions";
+import type { DuplicateReport } from "@/lib/deal-duplicates";
+import { DuplicatePrompt } from "@/components/deals/duplicate-prompt";
 import { formatOpsMoney } from "@/lib/ops-types";
 import type { OpsLinkEntity } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -116,7 +119,10 @@ function RecordDealForm({
   const [invoiceFile, setInvoiceFile] = useState<{ name: string; data: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ id: number; company: string } | null>(null);
+  const [done, setDone] = useState<{ id: number; company: string; adopted: boolean } | null>(null);
+  // When the tracker already holds something like this, the form steps aside
+  // and asks before creating a second record.
+  const [duplicates, setDuplicates] = useState<DuplicateReport | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -151,18 +157,61 @@ function RecordDealForm({
     setInvoiceFile({ name: file.name, data: btoa(binary) });
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-
-    const packages = allocations
+  function buildPackages() {
+    return allocations
       .filter((a) => a.eventId && Number(a.amount) > 0)
       .map((a) => ({
         event_id: Number(a.eventId),
         amount: Number(a.amount),
         package_label: a.label.trim(),
       }));
+  }
+
+  /**
+   * Check the tracker before writing. A hit steps aside to ask; anything else
+   * — including the ops panel being unreachable — creates as normal, because
+   * a failed lookup must not stop someone recording a deal.
+   */
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+
+    const report = await checkForExistingDeal({
+      company: company.trim(),
+      eventIds: buildPackages().map((p) => p.event_id),
+      amount: dealAmount || null,
+      currency,
+    });
+    setBusy(false);
+
+    if (report?.candidates.length) {
+      setDuplicates(report);
+      return;
+    }
+    await create();
+  }
+
+  /** Adopt the deal the tracker already has instead of making a second one. */
+  async function adopt(dealId: number) {
+    setBusy(true);
+    setError(null);
+    const res = await claimOpsDeal(dealId);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error ?? "Could not add that deal");
+      return;
+    }
+    setDuplicates(null);
+    setDone({ id: dealId, company: company.trim(), adopted: true });
+    router.refresh();
+  }
+
+  async function create() {
+    setBusy(true);
+    setError(null);
+
+    const packages = buildPackages();
 
     const res = await recordOpsDeal({
       input: {
@@ -187,9 +236,13 @@ function RecordDealForm({
     setBusy(false);
     if (!res.ok) {
       setError(res.error);
+      setDuplicates(null);
       return;
     }
-    setDone({ id: res.deal.id, company: res.deal.company });
+    // A deal recorded from here is one of mine, so claim it in the same breath.
+    await claimOpsDeal(res.deal.id);
+    setDuplicates(null);
+    setDone({ id: res.deal.id, company: res.deal.company, adopted: false });
     router.refresh();
   }
 
@@ -200,14 +253,41 @@ function RecordDealForm({
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--success-soft)] text-[var(--success)]">
             <BadgeCheck className="h-6 w-6" />
           </span>
-          <h2 className="mt-3 font-semibold">Recorded in the ops panel</h2>
+          <h2 className="mt-3 font-semibold">
+            {done.adopted ? "Added to your deals" : "Recorded in the ops panel"}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {done.company} is now deal #{done.id} in the tracker, with its event allocations.
+            {done.adopted
+              ? `Deal #${done.id} was already in the tracker — it's in your deals now, and nothing was duplicated.`
+              : `${done.company} is now deal #${done.id} in the tracker, with its event allocations.`}
           </p>
           <Button className="mt-5" onClick={onClose}>
             Done
           </Button>
         </div>
+      </Modal>
+    );
+  }
+
+  if (duplicates) {
+    return (
+      <Modal open onClose={onClose} size="lg">
+        <ModalHeader
+          icon={<Receipt className="h-4.5 w-4.5" />}
+          title="This might already exist"
+          description="Checked against the ops panel before creating anything."
+          onClose={onClose}
+        />
+        <ModalBody>
+          <DuplicatePrompt
+            report={duplicates}
+            busy={busy}
+            onAdopt={adopt}
+            onCreateAnyway={create}
+            onBack={() => setDuplicates(null)}
+          />
+          {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+        </ModalBody>
       </Modal>
     );
   }
@@ -480,7 +560,7 @@ function RecordDealForm({
           </Button>
           <Button type="submit" disabled={busy}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
-            Record in ops panel
+            {busy ? "Checking the ops panel…" : "Record in ops panel"}
           </Button>
         </ModalFooter>
       </form>

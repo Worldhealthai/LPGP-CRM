@@ -287,7 +287,8 @@ export type Task = {
 };
 
 // --- Ops panel link --------------------------------------------------------
-export type OpsLinkEntity = "lead" | "account" | "company";
+/** `user` = a salesperson claiming an ops deal as one of "my deals". */
+export type OpsLinkEntity = "lead" | "account" | "company" | "user";
 
 export type OpsLink = {
   id: string;

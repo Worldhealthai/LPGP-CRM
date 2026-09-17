@@ -41,12 +41,18 @@ optionally record deals into it.
 - **Spreadsheet import** — drop in an `.xlsx`/`.csv`, confirm the auto-matched
   columns, and import. Duplicates are filtered against the pipeline *and* within
   the file, and any company already sponsoring an event is flagged and linked.
+- **My deals** — your deals as the tracker holds them, picked up automatically
+  from the initials it stamps on each one. Adding a deal checks the tracker
+  first: if something like it is already there you're asked "is it this one?"
+  and can adopt it instead of entering the same business twice. Each deal shows
+  where its paperwork stands — **need to send invoice**, awaiting signature, or
+  signed.
 - **Event performance** — every event in the ops panel against a target you set
   here, with per-portfolio roll-ups across the seven programme series, and an
   expandable list of who is sponsoring each event and who has paid.
 - **⌘K palette** — jump to any page or search leads, sponsors, firms and people.
 
-### Intelligence database
+### Database
 
 - **Company cards** — one profile per firm, filterable by LP / GP / SP.
 - **Contact profiles** — inline-editable, with free-text notes on any record.
@@ -66,14 +72,14 @@ pnpm dev                           # http://localhost:3000
 
 In the Supabase dashboard → **SQL Editor**, paste and run
 [`supabase/schema.sql`](supabase/schema.sql). That single file creates
-everything — the intelligence tables, the leads pipeline, the sales layer
+everything — the database tables, the leads pipeline, the sales layer
 (accounts, points of contact, activities, tasks, ops links), event targets, the
-events each lead is for, and per-user initials. It's idempotent, so it's safe
-to re-run.
+events each lead is for, per-user initials and claimed deals. It's idempotent,
+so it's safe to re-run.
 
 > Prefer step-by-step migrations? Run the files in
 > [`supabase/migrations/`](supabase/migrations) **in numeric order**
-> (`0001` → … → `0011`). Running a later one first fails with
+> (`0001` → … → `0012`). Running a later one first fails with
 > `relation "public.companies" does not exist` — that just means `0001`
 > hasn't run yet.
 

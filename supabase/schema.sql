@@ -536,3 +536,13 @@ alter table public.profiles
 -- Case-insensitive, and NULLs are allowed (not everyone signs deals).
 create unique index if not exists profiles_initials_unique
   on public.profiles (upper(initials)) where initials is not null;
+
+
+-- ##################################################################
+-- ## A person can claim an ops-panel deal as their own (0012)
+-- ##################################################################
+
+alter table public.ops_links drop constraint if exists ops_links_entity_type_check;
+alter table public.ops_links
+  add constraint ops_links_entity_type_check
+  check (entity_type in ('lead', 'account', 'company', 'user'));

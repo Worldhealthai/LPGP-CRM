@@ -14,6 +14,7 @@ import {
   List,
   Loader2,
   PhoneCall,
+  Receipt,
   Search,
   Settings,
   Star,
@@ -59,6 +60,14 @@ const COMMANDS: Command[] = [
     href: "/import/leads",
     icon: FileSpreadsheet,
     keywords: "excel csv xlsx upload spreadsheet",
+  },
+  {
+    id: "deals",
+    label: "My deals",
+    hint: "Yours in the ops panel",
+    href: "/deals",
+    icon: Receipt,
+    keywords: "deal invoice agreement signed contract money sponsor",
   },
   {
     id: "events",

@@ -48,6 +48,9 @@ same thing split in numeric order. Both are idempotent.
   stops two people approaching one firm has to be per event.
 - **Initials** (0011) — `profiles.initials`, unique case-insensitively. The
   tracker stamps every deal with the signer's initials; this is the join.
+- **My deals** (0012) — `ops_links.entity_type` gains `user`. A salesperson
+  claiming a tracker deal is a link owned by their profile, so nothing about
+  the money is copied into Supabase.
 
 The app degrades gracefully when Supabase env vars are absent (shows a
 "connect Supabase" state instead of crashing).
@@ -83,6 +86,17 @@ per-lead notice where a human confirms it.
 
 Each `ops_links` row snapshots the bridge payload, so a sponsor's event
 allocations still render when the tracker is unreachable.
+
+**Agreement status** (`need_invoice` / `awaiting_signature` / `signed`) is
+derived in `bridge.js` and mirrored by `dealAgreementStatus()` in the tracker's
+`app.js`, so both apps say the same thing about the same deal. It keys off
+whether a FILE is on record, not the "sent" tick — a deal marked sent with
+nothing filed still means someone owes the client a document.
+
+**Before creating a deal**, `lib/deal-duplicates.ts` asks whether the tracker
+already has one: company similarity from the bridge, plus the two things that
+separate deals within a company (shared events, matching amount). It only ever
+asks — adopting or creating is the person's call.
 
 ## Conventions
 

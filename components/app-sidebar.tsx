@@ -16,6 +16,7 @@ import {
   List,
   Menu,
   PhoneCall,
+  Receipt,
   Settings,
   Shield,
   Star,
@@ -39,6 +40,7 @@ const SELL: NavItem[] = [
   { href: "/leads", label: "Leads", icon: List },
   { href: "/leads/workspace", label: "Call workspace", icon: PhoneCall },
   { href: "/accounts", label: "Accounts", icon: Handshake },
+  { href: "/deals", label: "My deals", icon: Receipt },
   { href: "/events", label: "Event performance", icon: CalendarRange },
   { href: "/import/leads", label: "Import leads", icon: FileSpreadsheet },
 ];
@@ -54,7 +56,7 @@ const DATA: NavItem[] = [
 
 const GROUPS: NavGroup[] = [
   { label: "Sell", items: SELL },
-  { label: "Intelligence", items: DATA },
+  { label: "Database", items: DATA },
 ];
 
 const ALL_HREFS = GROUPS.flatMap((g) => g.items).map((i) => i.href);

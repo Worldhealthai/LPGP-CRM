@@ -36,9 +36,27 @@ export type OpsDeal = {
   deal_month: string;
   invoice_agreement_sent: boolean;
   signature_received: boolean;
+  agreement_status: AgreementStatus;
+  /** File names only — the files themselves live in the tracker. */
+  agreement_file: string;
+  signed_file: string;
   notes: string;
   created_at: string;
   events: OpsEventAllocation[];
+};
+
+/**
+ * Where a deal stands on paperwork, as derived by the tracker.
+ *   need_invoice        nothing on file — someone owes the client a document
+ *   awaiting_signature  sent, waiting on the countersigned copy
+ *   signed              signature received
+ */
+export type AgreementStatus = "need_invoice" | "awaiting_signature" | "signed";
+
+export const AGREEMENT_LABEL: Record<AgreementStatus, string> = {
+  need_invoice: "Need to send invoice",
+  awaiting_signature: "Awaiting signature",
+  signed: "Signed",
 };
 
 export type OpsCurrencyTotal = {

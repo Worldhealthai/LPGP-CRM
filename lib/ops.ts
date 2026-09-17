@@ -274,6 +274,18 @@ export async function getOpsDeal(dealId: number): Promise<OpsResult<OpsDeal>> {
   return opsFetch<OpsDeal>(`/api/bridge/deals/${dealId}`, 0);
 }
 
+/** Deals in the tracker, filtered. Uncached — "my deals" must be current. */
+export async function listOpsDeals(
+  filters: { initials?: string; company?: string; status?: string; limit?: number } = {},
+): Promise<OpsResult<OpsDeal[]>> {
+  const params = new URLSearchParams();
+  if (filters.initials) params.set("initials", filters.initials);
+  if (filters.company) params.set("company", filters.company);
+  if (filters.status) params.set("status", filters.status);
+  params.set("limit", String(filters.limit ?? 300));
+  return opsFetch<OpsDeal[]>(`/api/bridge/deals?${params}`, 0);
+}
+
 export async function pingOps(): Promise<OpsResult<OpsPing>> {
   return opsFetch<OpsPing>("/api/bridge/ping", 0);
 }
