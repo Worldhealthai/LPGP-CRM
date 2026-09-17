@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Building2,
+  CalendarRange,
   Command,
   FileSpreadsheet,
   Gauge,
@@ -22,6 +23,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { LpgpMark } from "@/components/lpgp-mark";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { openCommandPalette } from "@/components/command-palette";
@@ -37,6 +39,7 @@ const SELL: NavItem[] = [
   { href: "/leads", label: "Leads", icon: List },
   { href: "/leads/workspace", label: "Call workspace", icon: PhoneCall },
   { href: "/accounts", label: "Accounts", icon: Handshake },
+  { href: "/events", label: "Event performance", icon: CalendarRange },
   { href: "/import/leads", label: "Import leads", icon: FileSpreadsheet },
 ];
 
@@ -72,9 +75,7 @@ function isActive(pathname: string, href: string) {
 function Brand({ onClick }: { onClick?: () => void }) {
   return (
     <Link href="/" onClick={onClick} className="group flex items-center gap-2.5 px-1">
-      <span className="brand-gradient grid h-8 w-8 place-items-center rounded-lg text-[13px] font-extrabold tracking-tight text-white shadow-lg transition-transform group-hover:scale-105">
-        LP
-      </span>
+      <LpgpMark className="h-8 w-8 shrink-0 text-white transition-transform group-hover:scale-105" />
       <span className="leading-none">
         <span className="block text-[15px] font-bold tracking-tight text-white">LPGP Connect</span>
         <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--rail-fg-dim)]">

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { getSessionUser } from "@/lib/auth";
@@ -8,14 +8,6 @@ import { getSessionUser } from "@/lib/auth";
 const sans = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
-  display: "swap",
-});
-
-// Page titles and hero figures only. One flourish, used sparingly.
-const display = Instrument_Serif({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: "400",
   display: "swap",
 });
 
@@ -40,7 +32,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${display.variable} ${mono.variable} antialiased`}
+      className={`${sans.variable} ${mono.variable} antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

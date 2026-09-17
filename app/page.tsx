@@ -81,11 +81,11 @@ export default async function CommandCentre() {
         <div className="relative flex flex-wrap items-end justify-between gap-5">
           <div className="min-w-0">
             <p className="eyebrow">Command centre</p>
-            <h1 className="display mt-1.5 text-[2rem] leading-tight md:text-[2.75rem]">
+            <h1 className="display mt-1.5 text-[1.85rem] leading-tight md:text-[2.4rem]">
               {greeting(now)}
               {user?.name ? (
                 <>
-                  , <span className="brand-text">{user.name.split(" ")[0]}</span>
+                  , {user.name.split(" ")[0]}
                 </>
               ) : null}
             </h1>

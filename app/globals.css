@@ -56,6 +56,23 @@
   --destructive-foreground: #ffffff;
   --gold: #9a6b00;
 
+  /* ── Chart slots ──────────────────────────────────────────────────────── */
+  /* Series identity, one hue per programme series. Validated as a set against
+     the white card surface: lightness band, chroma floor, adjacent-pair CVD
+     separation (worst ΔE 9.1) and normal-vision floor (19.6) all pass.
+     Three slots sit under 3:1 contrast here, so they are only ever used as a
+     chip beside a visible text label — never as the sole carrier of meaning. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  /* Magnitude bars use one hue; colour carries size, not identity. */
+  --chart-bar: #1a5fd4;
+  --chart-track: #e3e9f2;
+
   --radius: 0.75rem;
 
   /* Ambient page light — cool from the top-left, brand-tinted top-right */
@@ -102,6 +119,18 @@
   --destructive-foreground: #1a0810;
   --gold: #f0c26a;
 
+  /* Same seven hues, re-stepped for the dark card surface (#111725) and
+     validated as a set — not an automatic flip. All seven clear 3:1 here. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-bar: #4d8cf5;
+  --chart-track: #1e2941;
+
   --page-glow:
     radial-gradient(1200px 680px at 10% -14%, rgba(77, 140, 245, 0.13), transparent 56%),
     radial-gradient(1000px 560px at 104% -2%, rgba(42, 208, 232, 0.08), transparent 52%),
@@ -143,6 +172,15 @@
   --color-ops: var(--ops);
   --color-ops-soft: var(--ops-soft);
   --color-gold: var(--gold);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-bar: var(--chart-bar);
+  --color-chart-track: var(--chart-track);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -150,7 +188,6 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --font-display: var(--font-display);
 }
 
 @layer base {
@@ -220,12 +257,21 @@
 
 /* ── Type ────────────────────────────────────────────────────────────────── */
 
-/* Serif display for page titles and hero figures — the one flourish, used
-   sparingly so dense table pages stay neutral. */
+/* Display: the same grotesque, pulled tight. Restrained on purpose — the
+   brand mark is monochrome geometry and a serif flourish would fight it. */
 .display {
-  font-family: var(--font-display), Georgia, serif;
-  font-weight: 400;
-  letter-spacing: -0.015em;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* Hero figures: tabular mono, so money and counts read as measured values
+   rather than decoration, and never jitter as they update. */
+.figure {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  font-weight: 600;
+  letter-spacing: -0.04em;
 }
 
 .eyebrow {

@@ -48,7 +48,7 @@ export function Kpi({
           <span className={cn("grid h-8 w-8 place-items-center rounded-lg", toneRing)}>{icon}</span>
         ) : null}
       </div>
-      <p className="display mt-3 text-[2.5rem] leading-none tracking-tight">{value}</p>
+      <p className="figure mt-3 text-[2.25rem] leading-none">{value}</p>
       {sub ? <p className="mt-2 text-sm text-muted-foreground">{sub}</p> : null}
     </div>
   );
@@ -318,7 +318,7 @@ export function ConnectRate({ calls, connects }: { calls: number; connects: numb
           <TrendingUp className="h-4 w-4" />
         </span>
       </div>
-      <p className="display mt-3 text-[2.5rem] leading-none tracking-tight">{pct}%</p>
+      <p className="figure mt-3 text-[2.25rem] leading-none">{pct}%</p>
       <p className="mt-2 text-sm text-muted-foreground">
         {connects} connected of {calls} call{calls === 1 ? "" : "s"}
       </p>

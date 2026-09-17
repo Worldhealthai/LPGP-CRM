@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   Building2,
+  CalendarRange,
   CornerDownLeft,
   FileSpreadsheet,
   Gauge,
@@ -58,6 +59,14 @@ const COMMANDS: Command[] = [
     href: "/import/leads",
     icon: FileSpreadsheet,
     keywords: "excel csv xlsx upload spreadsheet",
+  },
+  {
+    id: "events",
+    label: "Event performance",
+    hint: "Targets vs actuals",
+    href: "/events",
+    icon: CalendarRange,
+    keywords: "event target revenue portfolio series sponsor performance",
   },
   { id: "companies", label: "Companies", href: "/companies", icon: Building2, keywords: "database firms lp gp sp" },
   { id: "contacts", label: "Contacts", href: "/contacts", icon: Users, keywords: "people database" },
