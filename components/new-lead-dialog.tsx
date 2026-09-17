@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Loader2, Sparkles } from "lucide-react";
 import { createLead } from "@/lib/crm-actions";
+import { linkOpsCompany } from "@/lib/ops-actions";
+import { OpsMatchPanel } from "@/components/ops/ops-match-panel";
+import type { OpsMatch } from "@/lib/ops-types";
 import { LEAD_STAGES, MARKETS, MARKET_LABELS } from "@/lib/pipeline";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "@/components/ui/modal";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -48,6 +51,9 @@ export function NewLeadDialog({
   const [value, setValue] = useState("");
   const [nextStep, setNextStep] = useState("");
   const [ownerId, setOwnerId] = useState("");
+  // Set when someone accepts the "already in the ops panel" notice. The link
+  // itself can only be written once the lead has an id, so it waits for save.
+  const [opsLink, setOpsLink] = useState<OpsMatch | null>(null);
 
   const linkedCompany = companies.find(
     (c) => c.name.toLowerCase() === companyName.trim().toLowerCase(),
@@ -63,6 +69,7 @@ export function NewLeadDialog({
     setValue("");
     setNextStep("");
     setOwnerId("");
+    setOpsLink(null);
     setError(null);
   }
 
@@ -87,6 +94,10 @@ export function NewLeadDialog({
       if (!res.ok) {
         setError(res.error ?? "Could not create lead");
         return;
+      }
+      // Best-effort: a failed link shouldn't lose the lead that was just created.
+      if (opsLink && res.id) {
+        await linkOpsCompany("lead", res.id, opsLink);
       }
       setOpen(false);
       reset();
@@ -140,6 +151,21 @@ export function NewLeadDialog({
                     : "Not in the database yet — that's fine, it'll be a standalone lead."}
                 </p>
               </div>
+
+              <OpsMatchPanel
+                companyName={companyName}
+                onPendingLink={setOpsLink}
+                onAdopt={(match) => {
+                  // Take the ops panel's spelling — it's what invoices carry.
+                  setCompanyName(match.company);
+                  const deal = match.deals[0];
+                  if (deal?.contact_name && !contactName) setContactName(deal.contact_name);
+                  // Only copy the figure across when the currencies agree;
+                  // dropping £4,000 into a USD field would quietly misreport.
+                  const usd = match.totals.find((t) => t.currency === "USD");
+                  if (usd && !value) setValue(String(Math.round(usd.contracted)));
+                }}
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="mb-1.5">Market</Label>

@@ -152,6 +152,20 @@ export type Lead = {
   source: string | null;
   next_step: string | null;
   next_step_date: string | null;
+  // Sales workflow (migration 0008)
+  title: string | null;
+  disposition: string | null;
+  callback_at: string | null;
+  last_activity_at: string | null;
+  call_count: number;
+  do_not_call: boolean;
+  priority: string;
+  website: string | null;
+  country: string | null;
+  import_id: string | null;
+  account_id: string | null;
+  ops_deal_id: number | null;
+  ops_checked_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -161,4 +175,121 @@ export type LeadOwner = { id: string; full_name: string | null; email: string | 
 export type LeadWithRefs = Lead & {
   owner: LeadOwner | null;
   company: { id: string; name: string; category: Category; domain: string | null } | null;
+};
+
+// --- Accounts (sponsors) ---------------------------------------------------
+export type Account = {
+  id: string;
+  company_id: string | null;
+  name: string;
+  category: Category | null;
+  owner_id: string | null;
+  status: string;
+  tier: string | null;
+  health: string | null;
+  domain: string | null;
+  website: string | null;
+  linkedin_url: string | null;
+  hq_location: string | null;
+  country: string | null;
+  ops_company: string | null;
+  first_sponsored_year: number | null;
+  renewal_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AccountContact = {
+  id: string;
+  account_id: string;
+  contact_id: string | null;
+  full_name: string;
+  job_title: string | null;
+  email: string | null;
+  phone: string | null;
+  mobile: string | null;
+  linkedin_url: string | null;
+  role: string | null;
+  is_primary: boolean;
+  last_contacted: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AccountWithRefs = Account & {
+  owner: LeadOwner | null;
+  contact_count: number;
+  primary_contact: AccountContact | null;
+};
+
+// --- Activity log ----------------------------------------------------------
+export type ActivityType = "call" | "email" | "meeting" | "linkedin" | "note" | "task";
+
+export type Activity = {
+  id: string;
+  type: ActivityType;
+  outcome: string | null;
+  subject: string | null;
+  body: string | null;
+  duration_seconds: number | null;
+  occurred_at: string;
+  owner_id: string | null;
+  lead_id: string | null;
+  account_id: string | null;
+  company_id: string | null;
+  contact_id: string | null;
+  account_contact_id: string | null;
+  created_at: string;
+};
+
+export type ActivityWithRefs = Activity & {
+  owner: LeadOwner | null;
+  lead_name: string | null;
+  account_name: string | null;
+};
+
+// --- Tasks -----------------------------------------------------------------
+export type Task = {
+  id: string;
+  title: string;
+  notes: string | null;
+  due_date: string | null;
+  priority: string;
+  done: boolean;
+  done_at: string | null;
+  owner_id: string | null;
+  lead_id: string | null;
+  account_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// --- Ops panel link --------------------------------------------------------
+export type OpsLinkEntity = "lead" | "account" | "company";
+
+export type OpsLink = {
+  id: string;
+  entity_type: OpsLinkEntity;
+  entity_id: string;
+  ops_deal_id: number;
+  ops_company: string | null;
+  confidence: number | null;
+  /** Last payload the bridge returned — keeps the UI useful when it's down. */
+  snapshot: Record<string, unknown>;
+  synced_at: string;
+  linked_by: string | null;
+  created_at: string;
+};
+
+export type LeadImport = {
+  id: string;
+  filename: string | null;
+  row_count: number;
+  created_count: number;
+  skipped_count: number;
+  mapping: Record<string, string>;
+  owner_id: string | null;
+  created_at: string;
 };

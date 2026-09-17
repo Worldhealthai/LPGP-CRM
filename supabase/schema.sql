@@ -269,3 +269,211 @@ create policy "leads_read" on public.leads for select using (true);
 alter table public.notes drop constraint if exists notes_entity_type_check;
 alter table public.notes
   add constraint notes_entity_type_check check (entity_type in ('company', 'contact', 'lead'));
+
+
+-- ##################################################################
+-- ## Sales layer: accounts, points of contact, activities, tasks,
+-- ## ops-panel links and spreadsheet imports (migration 0008)
+-- ##################################################################
+
+-- --- Accounts (sponsors) ---------------------------------------------------
+create table if not exists public.accounts (
+  id                   uuid primary key default gen_random_uuid(),
+  company_id           uuid references public.companies (id) on delete set null,
+  name                 text not null,
+  category             company_category,
+  owner_id             uuid references public.profiles (id) on delete set null,
+  status               text not null default 'Active',   -- Active | Renewal due | Churned | Prospect
+  tier                 text,                             -- Platinum | Gold | Silver | Bronze
+  health               text,                             -- Healthy | At risk | Critical
+  domain               text,
+  website              text,
+  linkedin_url         text,
+  hq_location          text,
+  country              text,
+  -- Company name as it is spelled in the ops panel. Set when a link is
+  -- confirmed so later reconciles skip the fuzzy match entirely.
+  ops_company          text,
+  first_sponsored_year integer,
+  renewal_date         date,
+  notes                text,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now()
+);
+create index if not exists accounts_owner_idx    on public.accounts (owner_id);
+create index if not exists accounts_company_idx  on public.accounts (company_id);
+create index if not exists accounts_name_idx     on public.accounts (lower(name));
+create index if not exists accounts_status_idx   on public.accounts (status);
+
+drop trigger if exists accounts_set_updated_at on public.accounts;
+create trigger accounts_set_updated_at
+  before update on public.accounts
+  for each row execute function public.set_updated_at();
+
+-- --- Points of contact -----------------------------------------------------
+-- Standalone by design: a sponsor's billing contact often isn't in the
+-- intelligence database at all. contact_id links one up when it is.
+create table if not exists public.account_contacts (
+  id             uuid primary key default gen_random_uuid(),
+  account_id     uuid not null references public.accounts (id) on delete cascade,
+  contact_id     uuid references public.contacts (id) on delete set null,
+  full_name      text not null,
+  job_title      text,
+  email          text,
+  phone          text,
+  mobile         text,
+  linkedin_url   text,
+  role           text,                       -- Primary | Billing | Marketing | Speaker liaison | Legal
+  is_primary     boolean not null default false,
+  last_contacted date,
+  notes          text,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+create index if not exists account_contacts_account_idx on public.account_contacts (account_id);
+-- At most one primary contact per account.
+create unique index if not exists account_contacts_one_primary
+  on public.account_contacts (account_id) where is_primary;
+
+drop trigger if exists account_contacts_set_updated_at on public.account_contacts;
+create trigger account_contacts_set_updated_at
+  before update on public.account_contacts
+  for each row execute function public.set_updated_at();
+
+-- --- Activity log ----------------------------------------------------------
+do $$ begin
+  create type activity_type as enum ('call', 'email', 'meeting', 'linkedin', 'note', 'task');
+exception
+  when duplicate_object then null;
+end $$;
+
+create table if not exists public.activities (
+  id                 uuid primary key default gen_random_uuid(),
+  type               activity_type not null default 'call',
+  outcome            text,                   -- Connected | Voicemail | No answer | Gatekeeper | ...
+  subject            text,
+  body               text,
+  duration_seconds   integer,
+  occurred_at        timestamptz not null default now(),
+  owner_id           uuid references public.profiles (id) on delete set null,
+  lead_id            uuid references public.leads (id) on delete cascade,
+  account_id         uuid references public.accounts (id) on delete cascade,
+  company_id         uuid references public.companies (id) on delete cascade,
+  contact_id         uuid references public.contacts (id) on delete set null,
+  account_contact_id uuid references public.account_contacts (id) on delete set null,
+  created_at         timestamptz not null default now()
+);
+create index if not exists activities_lead_idx    on public.activities (lead_id, occurred_at desc);
+create index if not exists activities_account_idx on public.activities (account_id, occurred_at desc);
+create index if not exists activities_company_idx on public.activities (company_id, occurred_at desc);
+create index if not exists activities_owner_idx   on public.activities (owner_id, occurred_at desc);
+create index if not exists activities_recent_idx  on public.activities (occurred_at desc);
+
+-- --- Tasks / follow-ups ----------------------------------------------------
+create table if not exists public.tasks (
+  id         uuid primary key default gen_random_uuid(),
+  title      text not null,
+  notes      text,
+  due_date   date,
+  priority   text not null default 'Normal',  -- High | Normal | Low
+  done       boolean not null default false,
+  done_at    timestamptz,
+  owner_id   uuid references public.profiles (id) on delete set null,
+  lead_id    uuid references public.leads (id) on delete cascade,
+  account_id uuid references public.accounts (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists tasks_owner_due_idx on public.tasks (owner_id, done, due_date);
+
+drop trigger if exists tasks_set_updated_at on public.tasks;
+create trigger tasks_set_updated_at
+  before update on public.tasks
+  for each row execute function public.set_updated_at();
+
+-- --- Ops panel links -------------------------------------------------------
+-- ops_deal_id is TrackerLPGP's deals.id (a bigint in another database), so it
+-- is stored as a plain integer with no FK. `snapshot` holds the last payload
+-- the bridge returned: amounts, paid status and the event allocations.
+create table if not exists public.ops_links (
+  id          uuid primary key default gen_random_uuid(),
+  entity_type text not null check (entity_type in ('lead', 'account', 'company')),
+  entity_id   uuid not null,
+  ops_deal_id integer not null,
+  ops_company text,
+  confidence  numeric,
+  snapshot    jsonb not null default '{}'::jsonb,
+  synced_at   timestamptz not null default now(),
+  linked_by   uuid references public.profiles (id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+create unique index if not exists ops_links_unique
+  on public.ops_links (entity_type, entity_id, ops_deal_id);
+create index if not exists ops_links_entity_idx on public.ops_links (entity_type, entity_id);
+create index if not exists ops_links_deal_idx   on public.ops_links (ops_deal_id);
+
+-- --- Spreadsheet import batches -------------------------------------------
+create table if not exists public.lead_imports (
+  id            uuid primary key default gen_random_uuid(),
+  filename      text,
+  row_count     integer not null default 0,
+  created_count integer not null default 0,
+  skipped_count integer not null default 0,
+  mapping       jsonb not null default '{}'::jsonb,
+  owner_id      uuid references public.profiles (id) on delete set null,
+  created_at    timestamptz not null default now()
+);
+
+-- --- Lead columns the sales workflow needs ---------------------------------
+alter table public.leads
+  add column if not exists disposition      text,          -- last call outcome
+  add column if not exists callback_at      timestamptz,   -- scheduled call-back
+  add column if not exists last_activity_at timestamptz,
+  add column if not exists call_count       integer not null default 0,
+  add column if not exists do_not_call      boolean not null default false,
+  add column if not exists priority         text not null default 'Normal',
+  add column if not exists website          text,
+  add column if not exists country          text,
+  add column if not exists title            text,          -- free-text deal title
+  add column if not exists import_id        uuid references public.lead_imports (id) on delete set null,
+  add column if not exists account_id       uuid references public.accounts (id) on delete set null,
+  add column if not exists ops_deal_id      integer,       -- confirmed tracker deal
+  add column if not exists ops_checked_at   timestamptz;   -- last time we asked the bridge
+
+create index if not exists leads_callback_idx on public.leads (callback_at) where callback_at is not null;
+create index if not exists leads_activity_idx on public.leads (last_activity_at desc nulls last);
+create index if not exists leads_name_idx     on public.leads (lower(company_name));
+
+-- --- Notes can attach to an account too ------------------------------------
+alter table public.notes drop constraint if exists notes_entity_type_check;
+alter table public.notes
+  add constraint notes_entity_type_check
+  check (entity_type in ('company', 'contact', 'lead', 'account'));
+
+-- --- Row level security ----------------------------------------------------
+-- Same posture as the rest of the app: anon may READ, every write goes through
+-- the service-role key in server code.
+alter table public.accounts         enable row level security;
+alter table public.account_contacts enable row level security;
+alter table public.activities       enable row level security;
+alter table public.tasks            enable row level security;
+alter table public.ops_links        enable row level security;
+alter table public.lead_imports     enable row level security;
+
+drop policy if exists "accounts_read" on public.accounts;
+create policy "accounts_read" on public.accounts for select using (true);
+
+drop policy if exists "account_contacts_read" on public.account_contacts;
+create policy "account_contacts_read" on public.account_contacts for select using (true);
+
+drop policy if exists "activities_read" on public.activities;
+create policy "activities_read" on public.activities for select using (true);
+
+drop policy if exists "tasks_read" on public.tasks;
+create policy "tasks_read" on public.tasks for select using (true);
+
+drop policy if exists "ops_links_read" on public.ops_links;
+create policy "ops_links_read" on public.ops_links for select using (true);
+
+drop policy if exists "lead_imports_read" on public.lead_imports;
+create policy "lead_imports_read" on public.lead_imports for select using (true);
