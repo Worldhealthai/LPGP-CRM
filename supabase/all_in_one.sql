@@ -1,5 +1,5 @@
 -- ==================================================================
--- LPGP Connect CRM — COMPLETE SETUP (schema + all seed data)
+-- LPGP Connect CRM -- COMPLETE SETUP (schema + all seed data)
 -- Paste into Supabase -> SQL Editor and Run. Idempotent.
 -- Includes CRM auth (profiles) + leads pipeline tables.
 -- ==================================================================
@@ -10,11 +10,11 @@
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — FULL SCHEMA (run this once in Supabase → SQL Editor)
+-- LPGP Connect CRM -- FULL SCHEMA (run this once in Supabase -> SQL Editor)
 -- ---------------------------------------------------------------------------
 -- This is the consolidated equivalent of every file in migrations/. If you hit
 -- "relation public.companies does not exist", it means an ALTER ran before the
--- table existed — just run THIS file top to bottom and you're set. Idempotent.
+-- table existed -- just run THIS file top to bottom and you're set. Idempotent.
 -- ===========================================================================
 
 create extension if not exists "pgcrypto";
@@ -287,8 +287,8 @@ alter table public.notes
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — starter seed (real firms + Lusha-sourced contacts)
--- Run in Supabase → SQL Editor AFTER schema.sql. Safe to re-run (idempotent:
+-- LPGP Connect CRM -- starter seed (real firms + Lusha-sourced contacts)
+-- Run in Supabase -> SQL Editor AFTER schema.sql. Safe to re-run (idempotent:
 -- companies de-dupe on name, contacts on Lusha id).
 --
 -- Notes:
@@ -299,7 +299,7 @@ alter table public.notes
 -- ===========================================================================
 
 -- ----------------------------------------------------------------------------
--- LPs — institutional investors
+-- LPs -- institutional investors
 -- ----------------------------------------------------------------------------
 insert into public.companies (name, category, sub_type, region, status, country, city, hq_location, website, domain, aum_usd, active_funds, check_size, preferred_stages, geographic_focus, investment_thesis, allocations)
 select 'CalPERS', 'LP', 'Pension fund', 'North America', 'Active Allocator', 'United States', 'Sacramento', 'Sacramento, CA', 'https://www.calpers.ca.gov', 'calpers.ca.gov', 502400000000, 300, '$50M - $500M', 'Buyout, Growth, Core', 'Global', 'Largest US public pension. Builds a diversified total-fund portfolio with a growing private markets program across private equity, private debt and real assets.', '[{"label":"Public Equity","value":42},{"label":"Fixed Income","value":28},{"label":"Private Equity","value":17},{"label":"Real Assets","value":13}]'::jsonb
@@ -334,7 +334,7 @@ select 'GIC', 'LP', 'Sovereign wealth fund', 'Asia Pacific', 'Active Allocator',
 where not exists (select 1 from public.companies where lower(name) = lower('GIC'));
 
 -- ----------------------------------------------------------------------------
--- GPs — fund managers & VCs
+-- GPs -- fund managers & VCs
 -- ----------------------------------------------------------------------------
 insert into public.companies (name, category, sub_type, region, status, country, city, hq_location, website, domain, lusha_company_id, aum_usd, check_size, preferred_stages, geographic_focus, investment_thesis, allocations)
 select 'BlackRock', 'GP', 'Asset manager', 'North America', 'Core GP', 'United States', 'New York', 'New York, NY', 'https://www.blackrock.com', 'blackrock.com', '5743592', 11500000000000, '$50M - $5B', 'All stages', 'Global', 'World largest asset manager spanning index, active, multi-asset and alternatives via iShares and institutional mandates.', '[{"label":"Equities","value":52},{"label":"Fixed Income","value":27},{"label":"Multi-Asset","value":8},{"label":"Cash","value":10},{"label":"Alternatives","value":3}]'::jsonb
@@ -369,7 +369,7 @@ select 'Sequoia Capital', 'GP', 'Venture capital', 'North America', 'Core GP', '
 where not exists (select 1 from public.companies where lower(name) = lower('Sequoia Capital'));
 
 -- ----------------------------------------------------------------------------
--- SPs — solution providers (no AUM/allocation; service firms)
+-- SPs -- solution providers (no AUM/allocation; service firms)
 -- ----------------------------------------------------------------------------
 insert into public.companies (name, category, sub_type, region, status, country, city, hq_location, website, domain, employee_range, investment_thesis)
 select 'KPMG', 'SP', 'Audit & advisory', 'Global', 'Vendor', 'Netherlands', 'Amstelveen', 'Amstelveen, Netherlands', 'https://www.kpmg.com', 'kpmg.com', '270,000+', 'Big Four audit, tax and advisory network serving asset managers and institutional investors worldwide.'
@@ -477,9 +477,9 @@ where not exists (select 1 from public.contacts where lusha_contact_id='71145072
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — company expansion (12 more major firms)
+-- LPGP Connect CRM -- company expansion (12 more major firms)
 -- Run AFTER schema.sql. Idempotent (de-dupes on name). Approximate public-domain
--- AUM / allocation figures (annual reports, Form ADV style) — refine as needed.
+-- AUM / allocation figures (annual reports, Form ADV style) -- refine as needed.
 -- ===========================================================================
 
 -- ---- LPs ----
@@ -539,7 +539,7 @@ where not exists (select 1 from public.companies where lower(name)=lower('Latham
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — company expansion wave 3 (12 more major firms)
+-- LPGP Connect CRM -- company expansion wave 3 (12 more major firms)
 -- Run AFTER schema.sql. Idempotent (de-dupes on name). Approximate public-domain
 -- AUM / allocation figures (annual reports, regulatory disclosures).
 -- ===========================================================================
@@ -601,7 +601,7 @@ where not exists (select 1 from public.companies where lower(name)=lower('Aztec 
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — contacts wave 2 (work emails via Lusha; emails only)
+-- LPGP Connect CRM -- contacts wave 2 (work emails via Lusha; emails only)
 -- Run AFTER schema.sql and seed.sql. Idempotent (de-dupes on Lusha contact id).
 -- Covers the remaining seeded LPs/GPs. (Harvard returned only university admin
 -- staff via Lusha, so it is left without contacts for now.)
@@ -717,7 +717,7 @@ where not exists (select 1 from public.contacts where lusha_contact_id='69490250
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — SP contacts wave (work emails via Lusha; emails only)
+-- LPGP Connect CRM -- SP contacts wave (work emails via Lusha; emails only)
 -- Run AFTER schema.sql and seed.sql. Idempotent (de-dupes on Lusha contact id).
 -- ===========================================================================
 
@@ -815,10 +815,10 @@ where not exists (select 1 from public.contacts where lusha_contact_id='41533306
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — flagship funds (fund-level data per GP)
+-- LPGP Connect CRM -- flagship funds (fund-level data per GP)
 -- Run AFTER schema.sql (or 0004_funds.sql) and the company seeds.
 -- Idempotent (de-dupes on fund name). Figures are approximate, public-domain
--- (press releases, manager disclosures) — NOT pulled from Form ADV Schedule D,
+-- (press releases, manager disclosures) -- NOT pulled from Form ADV Schedule D,
 -- which is blocked from this environment. Refine with the live filing.
 -- ===========================================================================
 
@@ -880,7 +880,7 @@ where not exists (select 1 from public.funds f where f.name = v.name);
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — sample LP commitments to funds (LP -> Fund -> GP)
+-- LPGP Connect CRM -- sample LP commitments to funds (LP -> Fund -> GP)
 -- Run AFTER 0005_commitments.sql, the company seeds and seed_funds.sql.
 -- Idempotent (one row per LP+fund pair).
 --
@@ -918,7 +918,7 @@ where not exists (
 -- ##################################################################
 
 -- ===========================================================================
--- LPGP Connect CRM — sample service relationships (which SPs a GP uses)
+-- LPGP Connect CRM -- sample service relationships (which SPs a GP uses)
 -- Run AFTER 0006_service_relationships.sql and the company seeds. Idempotent.
 --
 -- NOTE: these mappings are ILLUSTRATIVE / directional. Service-provider
@@ -1188,12 +1188,12 @@ create policy "lead_imports_read" on public.lead_imports for select using (true)
 
 create table if not exists public.event_targets (
   id               uuid primary key default gen_random_uuid(),
-  -- TrackerLPGP portfolio_events.id — an integer in another database, so no FK.
+  -- TrackerLPGP portfolio_events.id -- an integer in another database, so no FK.
   ops_event_id     integer not null unique,
   -- Snapshot of the tracker's name, so the page still reads sensibly when the
   -- bridge is unreachable.
   event_name       text,
-  -- Programme series ("portfolio"): private-debt, cfo-private-markets, …
+  -- Programme series ("portfolio"): private-debt, cfo-private-markets, ...
   series           text,
   target_amount    numeric,
   target_currency  text not null default 'GBP',

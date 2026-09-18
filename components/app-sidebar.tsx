@@ -77,10 +77,10 @@ function isActive(pathname: string, href: string) {
 function Brand({ onClick }: { onClick?: () => void }) {
   return (
     <Link href="/" onClick={onClick} className="group flex items-center gap-2.5 px-1">
-      <LpgpMark className="h-8 w-8 shrink-0 text-white transition-transform group-hover:scale-105" />
+      <LpgpMark className="h-8 w-8 shrink-0 text-[var(--rail-fg)] transition-transform group-hover:scale-105" />
       <span className="leading-none">
-        <span className="block text-[15px] font-bold tracking-tight text-white">LPGP Connect</span>
-        <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--rail-fg-dim)]">
+        <span className="block text-[15px] font-bold tracking-tight text-[#f3efe6]">LPGP Connect</span>
+        <span className="wordmark mt-1 block text-[9px] text-[var(--brass)]">
           Sales CRM
         </span>
       </span>
@@ -100,8 +100,8 @@ function RailLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void
       className={cn(
         "relative flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] font-medium transition-colors",
         on
-          ? "bg-[var(--rail-hover)] text-white"
-          : "text-[var(--rail-fg)] hover:bg-[var(--rail-hover)] hover:text-white",
+          ? "bg-[var(--rail-hover)] text-[#f3efe6]"
+          : "text-[var(--rail-fg)] hover:bg-[var(--rail-hover)] hover:text-[#f3efe6]",
       )}
     >
       {/* Active marker rides the left edge rather than filling the row, so the
@@ -126,7 +126,7 @@ function CommandTrigger({ onNavigate }: { onNavigate?: () => void }) {
         onNavigate?.();
         openCommandPalette();
       }}
-      className="flex w-full items-center gap-2 rounded-lg border border-[var(--rail-line)] bg-black/25 px-2.5 py-2 text-[13px] text-[var(--rail-fg-dim)] transition-colors hover:border-[var(--brand)]/50 hover:text-white"
+      className="flex w-full items-center gap-2 rounded-lg border border-[var(--rail-line)] bg-black/25 px-2.5 py-2 text-[13px] text-[var(--rail-fg-dim)] transition-colors hover:border-[var(--brand)]/50 hover:text-[#f3efe6]"
     >
       <Command className="h-3.5 w-3.5" />
       <span className="flex-1 text-left">Search or jump…</span>
@@ -140,7 +140,7 @@ function NavBody({ user, onNavigate }: { user: SessionUser | null; onNavigate?: 
     <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
       {GROUPS.map((group) => (
         <div key={group.label} className="space-y-0.5">
-          <p className="px-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--rail-fg-dim)]">
+          <p className="wordmark px-2.5 pb-1.5 text-[9px] text-[var(--rail-fg-dim)]">
             {group.label}
           </p>
           {group.items.map((item) => (
@@ -151,7 +151,7 @@ function NavBody({ user, onNavigate }: { user: SessionUser | null; onNavigate?: 
 
       {user?.role === "admin" ? (
         <div className="space-y-0.5">
-          <p className="px-2.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--rail-fg-dim)]">
+          <p className="wordmark px-2.5 pb-1.5 text-[9px] text-[var(--rail-fg-dim)]">
             Admin
           </p>
           <RailLink
@@ -175,8 +175,8 @@ function RailFooter({ user, onNavigate }: { user: SessionUser | null; onNavigate
         className={cn(
           "flex items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] font-medium transition-colors",
           settingsOn
-            ? "bg-[var(--rail-hover)] text-white"
-            : "text-[var(--rail-fg)] hover:bg-[var(--rail-hover)] hover:text-white",
+            ? "bg-[var(--rail-hover)] text-[#f3efe6]"
+            : "text-[var(--rail-fg)] hover:bg-[var(--rail-hover)] hover:text-[#f3efe6]",
         )}
       >
         <Settings className="h-4 w-4 opacity-80" />
@@ -187,11 +187,11 @@ function RailFooter({ user, onNavigate }: { user: SessionUser | null; onNavigate
 
       {user ? (
         <div className="rail-line flex items-center gap-2.5 rounded-lg border bg-black/25 px-2.5 py-2">
-          <span className="brand-gradient grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white">
+          <span className="brand-gradient grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold text-[var(--rail-bg)]">
             {initials(user.name)}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-medium text-white">{user.name}</div>
+            <div className="truncate text-[13px] font-medium text-[#f3efe6]">{user.name}</div>
             <div className="truncate text-[10px] text-[var(--rail-fg-dim)]">
               {user.role === "admin" ? "Admin" : "Member"}
             </div>
@@ -205,7 +205,7 @@ function RailFooter({ user, onNavigate }: { user: SessionUser | null; onNavigate
 
 export function AppSidebar({ user }: { user: SessionUser | null }) {
   return (
-    <aside className="rail sticky top-0 hidden h-screen w-[15.5rem] shrink-0 flex-col md:flex">
+    <aside className="rail rail-edge sticky top-0 hidden h-screen w-[15.5rem] shrink-0 flex-col md:flex">
       <div className="rail-line flex h-16 items-center border-b px-3">
         <Brand />
       </div>

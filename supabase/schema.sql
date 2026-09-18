@@ -1,9 +1,9 @@
 -- ===========================================================================
--- LPGP Connect CRM — FULL SCHEMA (run this once in Supabase → SQL Editor)
+-- LPGP Connect CRM -- FULL SCHEMA (run this once in Supabase -> SQL Editor)
 -- ---------------------------------------------------------------------------
 -- This is the consolidated equivalent of every file in migrations/. If you hit
 -- "relation public.companies does not exist", it means an ALTER ran before the
--- table existed — just run THIS file top to bottom and you're set. Idempotent.
+-- table existed -- just run THIS file top to bottom and you're set. Idempotent.
 -- ===========================================================================
 
 create extension if not exists "pgcrypto";
@@ -485,12 +485,12 @@ create policy "lead_imports_read" on public.lead_imports for select using (true)
 
 create table if not exists public.event_targets (
   id               uuid primary key default gen_random_uuid(),
-  -- TrackerLPGP portfolio_events.id — an integer in another database, so no FK.
+  -- TrackerLPGP portfolio_events.id -- an integer in another database, so no FK.
   ops_event_id     integer not null unique,
   -- Snapshot of the tracker's name, so the page still reads sensibly when the
   -- bridge is unreachable.
   event_name       text,
-  -- Programme series ("portfolio"): private-debt, cfo-private-markets, …
+  -- Programme series ("portfolio"): private-debt, cfo-private-markets, ...
   series           text,
   target_amount    numeric,
   target_currency  text not null default 'GBP',

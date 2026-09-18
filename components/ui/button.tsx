@@ -10,8 +10,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        // Tinted rather than filled: a solid claret block is the loudest thing
+        // on a page of graphite and cream, and a delete button does not need to
+        // be the loudest thing. The claret ink still names it clearly.
         destructive:
-          "bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20",
+          "border border-destructive/35 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/55 focus-visible:ring-destructive/25",
         outline:
           "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",

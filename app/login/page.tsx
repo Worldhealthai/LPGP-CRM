@@ -47,7 +47,7 @@ export default function LoginPage() {
             LPGP <span className="text-muted-foreground font-normal">Connect</span>
           </span>
         </div>
-        <div className="rounded-2xl border bg-card p-6 shadow-sm">
+        <div className="sheen rounded-2xl border bg-card p-6">
           <h1 className="text-lg font-semibold">Sign in</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Access your pipeline and the database.</p>
           <form onSubmit={submit} className="mt-5 space-y-3">
