@@ -43,7 +43,7 @@ export default async function AdminPage() {
       />
 
       {/* Team */}
-      <section className="rounded-2xl border bg-card p-5 shadow-sm">
+      <section className="sheen rounded-2xl border bg-card p-5">
         <h2 className="font-semibold mb-3">Team ({profiles.length})</h2>
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {profiles.map((p) => (
@@ -74,7 +74,7 @@ export default async function AdminPage() {
       </section>
 
       {/* Assign leads */}
-      <section className="rounded-2xl border bg-card overflow-hidden shadow-sm">
+      <section className="sheen rounded-2xl border bg-card overflow-hidden">
         <div className="px-5 py-3.5 border-b">
           <h2 className="font-semibold">Leads ({leads.length})</h2>
         </div>

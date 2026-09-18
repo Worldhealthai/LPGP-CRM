@@ -114,13 +114,27 @@ asks — adopting or creating is the person's call.
 - Client state is **derived, not reset in effects** (results carry the query or
   id they answer). The React Compiler lint is enforced; don't reach for an
   escape hatch, restructure instead.
+- The theme is **"Pavilion"** (`app/globals.css`), taken from our own exhibition
+  stands: matte graphite panels, cream lettering, walnut behind them. Primary is
+  near-black in light mode and cream in dark — inverted, the way a stand puts
+  white lettering on a black panel — and `--brass` is the single warm flourish.
+  Depth comes from a **light-line** (the `.sheen` top hairline, the rail's
+  `.rail-edge`), not from drop shadows: the stands are matte, and a glossy panel
+  would break the illusion. The rail is always the dark panel in both modes and
+  re-points `--brand`/`--brass` inside itself, so nested components need no
+  special casing.
 - `.display` is tight sans for titles; `.figure` is tabular mono for money and
-  counts. No serif — the brand mark is monochrome geometry and a flourish
-  fights it.
+  counts; `.wordmark` is the widely-tracked signage caps, for a mark or a panel
+  label and never for a sentence. No serif — the brand mark is monochrome
+  geometry and a flourish fights it.
 - Charts follow the `dataviz` method: form before colour, one axis, categorical
   hues assigned by entity and never cycled. The seven series hues in
   `--chart-1..7` are validated against both card surfaces — re-run the skill's
-  validator before changing any of them.
+  validator before changing any of them. They deliberately survived the Pavilion
+  retheme: a muted earth-tone set was measured and fails the chroma floor, CVD
+  separation and the normal-vision floor, so seven series cannot be told apart
+  in it. Magnitude bars (`--chart-bar`) wear the walnut instead, because there
+  colour carries size rather than identity.
 - The 2027 programme (`lib/events-catalogue.ts`) is transcribed from the
   published schedule. Its `guessSeries` only suggests; a suggestion is never
   written without someone confirming it.

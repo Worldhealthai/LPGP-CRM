@@ -39,7 +39,7 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
       </Link>
 
       {/* Header */}
-      <div className="rounded-2xl border bg-card p-6 shadow-sm">
+      <div className="sheen rounded-2xl border bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lead</p>
@@ -107,7 +107,7 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
       </div>
 
       {opsDeals.length ? (
-        <section className="rounded-2xl border bg-card p-5 shadow-sm">
+        <section className="sheen rounded-2xl border bg-card p-5">
           <h2 className="mb-1 font-semibold">In the ops panel</h2>
           <p className="mb-4 text-sm text-muted-foreground">
             This company already has signed business in the tracker.
@@ -117,11 +117,11 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="lg:col-span-2 rounded-2xl border bg-card p-5 shadow-sm">
+        <section className="sheen lg:col-span-2 rounded-2xl border bg-card p-5">
           <h2 className="font-semibold mb-4">Lead details</h2>
           <LeadEditor lead={lead} canEdit={canEdit} isAdmin={isAdmin} profiles={profiles} />
         </section>
-        <section className="rounded-2xl border bg-card p-5 shadow-sm h-fit">
+        <section className="sheen rounded-2xl border bg-card p-5 h-fit">
           <h2 className="font-semibold mb-3">Notes</h2>
           <NotesPanel entityType="lead" entityId={lead.id} notes={notes} />
         </section>

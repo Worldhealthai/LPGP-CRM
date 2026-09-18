@@ -110,7 +110,7 @@ export function LeadsTable({
         <NewLeadDialog companies={companies} profiles={profiles} isAdmin={isAdmin} />
       </div>
 
-      <div className="rounded-2xl border bg-card overflow-hidden shadow-sm">
+      <div className="sheen rounded-2xl border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-muted-foreground">

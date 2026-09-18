@@ -32,7 +32,7 @@ export default async function FundProfile({ params }: { params: Promise<{ id: st
       </Link>
 
       {/* Header */}
-      <div className="rounded-2xl border bg-card p-6 shadow-sm">
+      <div className="sheen rounded-2xl border bg-card p-6">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Fund <span className="mx-1">/</span> {fund.strategy ?? "Private markets"}
         </p>
@@ -82,7 +82,7 @@ export default async function FundProfile({ params }: { params: Promise<{ id: st
       </div>
 
       {/* LP commitments */}
-      <section className="rounded-2xl border bg-card overflow-hidden shadow-sm">
+      <section className="sheen rounded-2xl border bg-card overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b">
           <Building2 className="h-4 w-4 text-muted-foreground" />
           <h2 className="font-semibold">LP commitments</h2>
